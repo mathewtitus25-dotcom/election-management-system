@@ -126,7 +126,8 @@
         </div>
     </div>
 
-    @forelse($panchayats as $panchayat)
+    @if(count($panchayats) > 0)
+    @foreach($panchayats as $panchayat)
         <div class="panchayat-section">
             <div class="panchayat-header">
                 <h4 class="panchayat-title">
@@ -163,7 +164,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($panchayat->users as $u)
+                        @if(count($panchayat->users) > 0)
+                        @foreach($panchayat->users as $u)
                             @if($u->voter)
                             <tr>
                                 <td>
@@ -236,18 +238,20 @@
                                 </td>
                             </tr>
                             @endif
-                        @empty
+                        @endforeach
+                        @else
                             <tr><td colspan="4" class="text-center py-5 text-muted">No registered voters in this panchayat.</td></tr>
-                        @endforelse
+                        @endif
                     </tbody>
                 </table>
             </div>
         </div>
-    @empty
+    @endforeach
+    @else
         <div class="panchayat-section py-5 text-center">
             <div class="display-1 text-light mb-3"><i class="bi bi-folder2-open"></i></div>
             <h4 class="text-muted">No Panchayat configurations found.</h4>
         </div>
-    @endforelse
+    @endif
 </div>
 @endsection

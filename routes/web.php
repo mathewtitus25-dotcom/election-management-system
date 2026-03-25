@@ -1,15 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BLOController;
-use App\Http\Controllers\VoterController;
-use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\CandidateController;
-
+use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\VoterController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
@@ -38,7 +37,7 @@ Route::post('/candidate/apply', [CandidateController::class, 'register'])->name(
 
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
-    
+
     // Candidate Area (Approved Candidates only)
     Route::middleware(['role:candidate'])->group(function () {
         Route::get('/candidate/dashboard', [CandidateController::class, 'dashboard'])->name('candidate.dashboard');
@@ -65,7 +64,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/blo', [AdminController::class, 'createBLO'])->name('admin.blo.create');
         Route::post('/admin/blo/{id}/toggle', [AdminController::class, 'toggleBLO'])->name('admin.blo.toggle'); // Added Route
         Route::post('/admin/election', [AdminController::class, 'updateElection'])->name('admin.election.update');
-        
+
         // Candidate Management
         Route::post('/admin/candidate/approve/{id}', [AdminController::class, 'approveCandidate'])->name('admin.candidate.approve');
         Route::post('/admin/candidate/reject/{id}', [AdminController::class, 'rejectCandidate'])->name('admin.candidate.reject');
@@ -75,7 +74,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/voters', [AdminController::class, 'votersList'])->name('admin.voters.index');
         Route::delete('/admin/panchayats/{id}/voters', [AdminController::class, 'deleteAllVoters'])->name('admin.voters.deleteAll');
     });
-    
+
     // Public Results (Authenticated for now)
     Route::get('/results', [ElectionController::class, 'index'])->name('results');
 });

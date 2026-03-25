@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OtpMail;
+use App\Models\Panchayat;
 use App\Models\User;
 use App\Models\Voter;
-use App\Models\Panchayat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\OtpMail;
 
 class RegistrationController extends Controller
 {
     public function showRegister()
     {
         $panchayats = Panchayat::all();
+
         return view('auth.register', compact('panchayats'));
     }
 
@@ -38,7 +39,7 @@ class RegistrationController extends Controller
                 'dob.before_or_equal' => 'You must be at least 18 years old to register as a voter.',
             ]);
 
-            $fullName = trim($request->first_name . ' ' . ($request->middle_name ?? '') . ' ' . $request->last_name);
+            $fullName = trim($request->first_name.' '.($request->middle_name ?? '').' '.$request->last_name);
             $fullName = ucwords(strtolower(preg_replace('/\s+/', ' ', $fullName)));
 
             DB::beginTransaction();
@@ -51,12 +52,12 @@ class RegistrationController extends Controller
                 ->whereIn('status', ['pending', 'approved'])
                 ->first();
 
-            if ($existingVoterId && (!$user || $existingVoterId->user_id !== $user->id)) {
+            if ($existingVoterId && (! $user || $existingVoterId->user_id !== $user->id)) {
                 return back()->withErrors(['voter_id_number' => 'This Voter ID is already registered and verified/pending.'])->withInput();
             }
 
             if ($user) {
-                if (!Hash::check($request->password, $user->password)) {
+                if (! Hash::check($request->password, $user->password)) {
                     return back()->withErrors(['email' => 'This email is already in our system. Please provide the correct password to link your registration.'])->withInput();
                 }
 
@@ -93,7 +94,7 @@ class RegistrationController extends Controller
 
             DB::commit();
 
-            if (!$requiresOtp) {
+            if (! $requiresOtp) {
                 return redirect()->route('login')->with('success', 'Voter registration submitted and sent to BLO for approval.');
             }
 
@@ -108,7 +109,7 @@ class RegistrationController extends Controller
             try {
                 Mail::to($user->email)->send(new OtpMail($otp));
             } catch (\Exception $e) {
-                Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: " . $e->getMessage());
+                Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: ".$e->getMessage());
             }
 
             session(['register_email' => $user->email]);
@@ -116,16 +117,18 @@ class RegistrationController extends Controller
             return redirect()->route('otp.verify')->with('success', 'OTP sent! Please check your email inbox (and spam folder).');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Registration Error: " . $e->getMessage());
-            return back()->with('error', 'Registration Failed: ' . $e->getMessage())->withInput();
+            Log::error('Registration Error: '.$e->getMessage());
+
+            return back()->with('error', 'Registration Failed: '.$e->getMessage())->withInput();
         }
     }
 
     public function showOtp()
     {
-        if (!session('register_email')) {
+        if (! session('register_email')) {
             return redirect()->route('register');
         }
+
         return view('auth.otp');
     }
 
@@ -138,11 +141,11 @@ class RegistrationController extends Controller
         $email = strtolower(session('register_email'));
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('register')->withErrors(['email' => 'Session expired. Register again.']);
         }
 
-        if (!Hash::check($request->otp, $user->otp)) {
+        if (! Hash::check($request->otp, $user->otp)) {
             return back()->withErrors(['otp' => 'Invalid OTP']);
         }
 

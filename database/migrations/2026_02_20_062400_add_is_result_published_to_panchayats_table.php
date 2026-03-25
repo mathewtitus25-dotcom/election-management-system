@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('panchayats', 'is_result_published')) {
+        if (! Schema::hasColumn('panchayats', 'is_result_published')) {
             Schema::table('panchayats', function (Blueprint $table) {
                 $table->boolean('is_result_published')->default(false)->after('name');
             });

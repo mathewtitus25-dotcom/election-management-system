@@ -52,7 +52,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(Candidate::class);
     }
-    
+
     // Helper to check role
     public function hasRole($role)
     {

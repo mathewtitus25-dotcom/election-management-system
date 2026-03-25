@@ -144,7 +144,8 @@
             @csrf
             <input type="hidden" name="captured_photo" id="captured_photo_input">
             <div class="row g-4 mb-4">
-                @forelse($candidates as $candidate)
+                @if(count($candidates) > 0)
+                @foreach($candidates as $candidate)
                     <div class="col-md-6">
                         <!-- Only enable interaction if Active AND !Voted -->
                         @php $canVote = $isElectionActive && !$voter->has_voted; @endphp
@@ -249,11 +250,12 @@
                             </div>
                         </div>
                     </div>
-                @empty
+                @endforeach
+                @else
                     <div class="col-12">
                         <div class="alert alert-secondary">No candidates have been approved for this panchayat yet.</div>
                     </div>
-                @endforelse
+                @endif
             </div>
 
             @if($isElectionActive && !$voter->has_voted && $candidates->count() > 0)

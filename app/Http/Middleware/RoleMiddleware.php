@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
@@ -16,7 +16,7 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please log in to continue.');
         }
 
@@ -46,12 +46,16 @@ class RoleMiddleware
             }
         }
 
-        if (!$authorized) {
+        if (! $authorized) {
             // Determine active home route to redirect unauthorized access
             $home = 'voter.dashboard';
-            if ($activeDashboard === 'candidate') $home = 'candidate.dashboard';
-            elseif ($activeDashboard === 'admin') $home = 'admin.dashboard';
-            elseif ($activeDashboard === 'blo') $home = 'blo.dashboard';
+            if ($activeDashboard === 'candidate') {
+                $home = 'candidate.dashboard';
+            } elseif ($activeDashboard === 'admin') {
+                $home = 'admin.dashboard';
+            } elseif ($activeDashboard === 'blo') {
+                $home = 'blo.dashboard';
+            }
 
             return redirect()->route($home)
                 ->with('error', 'You are not authorized to access that page.');

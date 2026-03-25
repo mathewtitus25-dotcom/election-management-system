@@ -11,6 +11,7 @@ class CandidateKeyMail extends Mailable
     use Queueable, SerializesModels;
 
     public $candidateName;
+
     public $candidateKey;
 
     public function __construct($candidateName, $candidateKey)

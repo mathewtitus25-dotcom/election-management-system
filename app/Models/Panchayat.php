@@ -30,8 +30,8 @@ class Panchayat extends Model
     {
         return $this->hasManyThrough(Candidate::class, User::class);
     }
-    
+
     // Helper to get candidates for this panchayat directly from candidates table if needed,
-    // but candidates are linked to users which are linked to panchayats. 
+    // but candidates are linked to users which are linked to panchayats.
     // However, Candidate model stores the manifesto, etc.
 }

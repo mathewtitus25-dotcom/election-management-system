@@ -11,15 +11,17 @@ class CandidateApprovedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $candidateName;
+
     public $candidateId;
+
     public $panchayatName;
 
     /**
      * Create a new message instance.
      *
-     * @param string $candidateName
-     * @param string $candidateId
-     * @param string $panchayatName
+     * @param  string  $candidateName
+     * @param  string  $candidateId
+     * @param  string  $panchayatName
      */
     public function __construct($candidateName, $candidateId, $panchayatName)
     {
@@ -36,6 +38,6 @@ class CandidateApprovedMail extends Mailable
     public function build()
     {
         return $this->subject('Candidate Application Approved - Candidate Key Included')
-                    ->view('emails.candidate_approved');
+            ->view('emails.candidate_approved');
     }
 }

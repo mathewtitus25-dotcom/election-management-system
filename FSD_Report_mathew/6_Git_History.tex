@@ -1,0 +1,28 @@
+\chapter{GIT DEVELOPMENT HISTORY}
+
+Version control is a critical component of any structured software development workflow. The VoteDesk -- Three Panchayat Digital Election Management System was developed using Git for source control and maintained on GitHub as the remote repository. This enabled systematic tracking of all code changes, feature additions, bug fixes, and module developments throughout the project lifecycle.
+
+By maintaining a Git repository, every modification made to the system -- whether to the controllers, models, views, migrations, or routes -- was committed with a descriptive message, creating a transparent and auditable development history. The use of Git also ensured that any unintended breaking changes could be safely reverted to a previous stable state.
+
+The GitHub repository serves as the central storage platform for the full Laravel project, including all application logic, frontend assets, database migrations, and configuration files. It ensures the latest version of the project is securely preserved and readily available.
+
+Key phases of development tracked through the Git history include:
+
+\begin{itemize}
+    \item Initial scaffolding of the Laravel project with base migration files.
+    \item Implementation of user authentication, OTP verification, and role-based login.
+    \item Development of the voter registration module with Aadhaar and Voter ID validation.
+    \item BLO dashboard and voter approval workflow.
+    \item Candidate registration and admin approval pipeline with email notifications.
+    \item Vote casting module with real-time camera capture and anonymous vote recording.
+    \item Election configuration controls (start/stop), result publication, and unpublishing.
+    \item Admin voter verification logs with bulk delete functionality.
+    \item Frontend polishing and responsive UI improvements.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{git1.png}
+    \caption{GitHub Repository -- Project Directory Structure}
+    \label{fig:git2}
+\end{figure}

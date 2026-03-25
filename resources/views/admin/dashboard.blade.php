@@ -300,7 +300,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($blos as $blo)
+                                            @if(count($blos) > 0)
+                                            @foreach($blos as $blo)
                                                 <tr>
                                                     <td>
                                                         <div class="fw-bold">{{ $blo->user->name }}</div>
@@ -325,9 +326,10 @@
                                                         </form>
                                                     </td>
                                                 </tr>
-                                            @empty
+                                            @endforeach
+                                            @else
                                                 <tr><td colspan="4" class="text-center py-5 text-muted">No officers found in system database.</td></tr>
-                                            @endforelse
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>
@@ -359,7 +361,8 @@
                             <!-- Pending Candidates -->
                             <div class="tab-pane fade show active" id="pending-candidates">
                                 <div class="row row-cols-1 row-cols-md-2 g-4">
-                                @forelse($pendingCandidates as $candidate)
+                                @if(count($pendingCandidates) > 0)
+                                @foreach($pendingCandidates as $candidate)
                                     <div class="col">
                                         <div class="card h-100 border border-light shadow-sm">
                                             <div class="card-header bg-light bg-opacity-50 d-flex justify-content-between align-items-center py-3">
@@ -392,9 +395,10 @@
                                             </div>
                                         </div>
                                     </div>
-                                @empty
+                                @endforeach
+                                @else
                                     <div class="col-12 text-center py-5 text-muted">No pending applications discovered.</div>
-                                @endforelse
+                                @endif
                                 </div>
                             </div>
 
@@ -411,7 +415,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($approvedCandidates as $candidate)
+                                            @if(count($approvedCandidates) > 0)
+                                            @foreach($approvedCandidates as $candidate)
                                                 <tr>
                                                     <td>
                                                         <div class="fw-bold text-admin-primary" style="cursor:pointer; text-decoration:underline;" data-bs-toggle="modal" data-bs-target="#adminCandidateModal{{ $candidate->id }}">
@@ -430,9 +435,10 @@
                                                         </form>
                                                     </td>
                                                 </tr>
-                                            @empty
+                                            @endforeach
+                                            @else
                                                 <tr><td colspan="4" class="text-center py-5 text-muted">No authorized candidates found.</td></tr>
-                                            @endforelse
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>

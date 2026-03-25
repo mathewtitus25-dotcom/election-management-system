@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\ElectionConfig;
 use App\Models\Panchayat;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\ElectionConfig;
 
 class DatabaseSeeder extends Seeder
 {
@@ -27,7 +26,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // 2. Create an Admin User (To bootstrap the system)
-        if (!User::where('email', 'admin@example.com')->exists()) {
+        if (! User::where('email', 'admin@example.com')->exists()) {
             User::create([
                 'name' => 'System Admin',
                 'email' => 'admin@example.com',
@@ -35,12 +34,12 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
             ]);
         }
-        
+
         // 3. Initialize Election Config (Matches Motoko init)
-        if (!ElectionConfig::exists()) {
-             ElectionConfig::create([
-                 'is_active' => false,
-             ]);
+        if (! ElectionConfig::exists()) {
+            ElectionConfig::create([
+                'is_active' => false,
+            ]);
         }
     }
 }

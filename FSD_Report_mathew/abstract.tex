@@ -1,0 +1,15 @@
+\chapter*{ \begin{center} 
+    \textbf{\LARGE ABSTRACT}  % Large, bold, and centered heading  
+\end{center} }  
+\addcontentsline{toc}{chapter}{ABSTRACT}  
+\vspace{-2cm}  % Adjust this value if needed to reduce space further  
+ 
+
+The VoteDesk -- Three Panchayat Digital Election Management System is a comprehensive web-based application developed to digitise and manage the complete lifecycle of a local panchayat-level election. The system addresses the inefficiencies and security vulnerabilities inherent in traditional paper-based voting by providing a structured, multi-role digital platform that covers voter registration, candidate management, vote casting, and result publication.
+\\\\
+The application implements a strict role-based access control mechanism supporting four distinct user roles: System Administrator, Block Level Officer (BLO), Voter, and Candidate. The System Administrator oversees the entire election process, including creation and management of BLO accounts, control of the election lifecycle, approval of candidates, and system-wide monitoring. Block Level Officers are responsible for verifying and approving voter registrations within their assigned panchayat, as well as publishing election results after the election concludes. Voters register through a secure two-step process involving email OTP verification, and may only cast their vote after obtaining BLO approval. Approved candidates are provided a unique candidate key upon admin approval and can monitor election turnout from their dedicated dashboard.
+\\\\
+A key security feature of the system is its anonymous voting mechanism. When a voter casts a vote, a real-time photograph is captured via the device camera as biometric verification, while the vote record itself contains no link back to the voter's identity, thereby preserving ballot secrecy while maintaining audit capability. The vote is recorded as an anonymous transaction linked only to a candidate and panchayat, and the voter's record is flagged to prevent duplicate voting.
+\\\\
+Developed using the Laravel 12 framework with PHP 8.2, MySQL database, and Bootstrap-based Blade view templates, the system ensures data integrity, scalability, and maintainability. Email notifications are dispatched via Gmail SMTP for OTP verification and candidate approval communications. The system is structured across three independent panchayats, each with its own pool of voters, candidates, and a dedicated BLO, ensuring strict electoral boundary enforcement.
+

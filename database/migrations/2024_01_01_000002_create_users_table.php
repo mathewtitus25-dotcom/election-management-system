@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['admin', 'blo', 'voter', 'candidate'])->default('voter');
             $table->foreignId('panchayat_id')->nullable()->constrained('panchayats');
-            
+
             // OTP Fields
             $table->string('otp')->nullable();
             $table->timestamp('otp_expires_at')->nullable();

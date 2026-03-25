@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Voter;
+use Illuminate\Support\Facades\Auth;
 
 class BLOController extends Controller
 {
@@ -18,12 +17,12 @@ class BLOController extends Controller
         $panchayat = $user->panchayat;
 
         // Get Pending Voters for this Panchyat
-        $pendingVoters = Voter::whereHas('user', function($q) use ($user) {
+        $pendingVoters = Voter::whereHas('user', function ($q) use ($user) {
             $q->where('panchayat_id', $user->panchayat_id);
         })->where('status', 'pending')->with('user')->get();
 
         // Get Approved Voters
-        $approvedVoters = Voter::whereHas('user', function($q) use ($user) {
+        $approvedVoters = Voter::whereHas('user', function ($q) use ($user) {
             $q->where('panchayat_id', $user->panchayat_id);
         })->where('status', 'approved')->with('user')->get();
 
@@ -36,7 +35,7 @@ class BLOController extends Controller
     public function approveVoter($id)
     {
         $voter = Voter::findOrFail($id);
-        
+
         // Security Check: BLO can only approve voters in their panchayat
         if ($voter->user->panchayat_id !== Auth::user()->panchayat_id) {
             abort(403);
@@ -50,7 +49,7 @@ class BLOController extends Controller
     public function rejectVoter($id)
     {
         $voter = Voter::findOrFail($id);
-        
+
         // Security Check
         if ($voter->user->panchayat_id !== Auth::user()->panchayat_id) {
             abort(403);
@@ -59,13 +58,15 @@ class BLOController extends Controller
         $user = $voter->user;
 
         // If user has NO candidate profile: Delete User (cascades to Voter)
-        if (!$user->candidate) {
+        if (! $user->candidate) {
             $user->delete();
+
             return back()->with('success', 'Voter application rejected and account removed to free up email.');
         }
 
         // If user HAS candidate profile: Delete only Voter record
         $voter->delete();
+
         return back()->with('success', 'Voter profile rejected and removed. User account preserved for Candidate role.');
     }
 
@@ -81,10 +82,10 @@ class BLOController extends Controller
 
         $panchayat->update([
             'is_result_published' => true,
-            'was_published' => true
+            'was_published' => true,
         ]);
 
-        return back()->with('success', 'Election results for ' . $panchayat->name . ' published successfully.');
+        return back()->with('success', 'Election results for '.$panchayat->name.' published successfully.');
     }
 
     public function unpublishResult()
@@ -94,7 +95,6 @@ class BLOController extends Controller
 
         $panchayat->update(['is_result_published' => false]);
 
-        return back()->with('success', 'Election results for ' . $panchayat->name . ' unpublished (hidden from public).');
+        return back()->with('success', 'Election results for '.$panchayat->name.' unpublished (hidden from public).');
     }
-
 }

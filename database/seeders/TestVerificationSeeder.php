@@ -2,16 +2,16 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\Panchayat;
 use App\Models\BLO;
-use App\Models\Voter;
 use App\Models\Candidate;
 use App\Models\ElectionConfig;
+use App\Models\Panchayat;
+use App\Models\User;
 use App\Models\Vote;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Voter;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class TestVerificationSeeder extends Seeder
 {
@@ -38,7 +38,7 @@ class TestVerificationSeeder extends Seeder
             ['email' => 'test-candidate@example.com'],
             ['name' => 'Test Candidate', 'password' => Hash::make('password'), 'role' => 'candidate', 'panchayat_id' => 1]
         );
-        
+
         Candidate::updateOrCreate(['user_id' => $candidateUser->id], [
             'candidate_id' => 'CAN-001',
             'dob' => '1990-01-01',
@@ -49,7 +49,7 @@ class TestVerificationSeeder extends Seeder
             'qualification' => 'Graduate',
             'manifesto' => 'Working for the people.',
             'status' => 'approved',
-            'votes_count' => 0
+            'votes_count' => 0,
         ]);
 
         // 5. Voter
@@ -57,22 +57,22 @@ class TestVerificationSeeder extends Seeder
             ['email' => 'test-voter@example.com'],
             ['name' => 'Test Voter', 'password' => Hash::make('password'), 'role' => 'voter', 'panchayat_id' => 1]
         );
-        
+
         Voter::updateOrCreate(['user_id' => $voterUser->id], [
             'voter_id_number' => 'VOTER-123',
             'dob' => '1995-01-01',
             'status' => 'approved',
-            'has_voted' => false
+            'has_voted' => false,
         ]);
 
         // 6. Reset Election Config
         ElectionConfig::updateOrCreate(['id' => 1], ['is_active' => true]);
-        
+
         // Clear previous votes
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Vote::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        
+
         // Reset Panchayat publish status
         $p1->update(['is_result_published' => false]);
     }

@@ -22,7 +22,8 @@
     </div>
 
     <div class="row g-4 justify-content-center">
-        @forelse($results as $panchayat)
+        @if(count($results) > 0)
+        @foreach($results as $panchayat)
             @php
                 $totalVotes = $panchayat->candidates->sum('votes_count');
                 $winner = $panchayat->candidates->first();
@@ -115,7 +116,8 @@
                     </div>
                 </div>
             </div>
-        @empty
+        @endforeach
+        @else
             <div class="col-12 text-center py-5">
                 <div class="empty-state">
                     <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" alt="No Results" class="img-fluid opacity-50 mb-3" style="max-height: 200px; filter: grayscale(1);">
@@ -123,7 +125,7 @@
                     <p class="text-muted">Once elections are set up, results will appear here.</p>
                 </div>
             </div>
-        @endforelse
+        @endif
     </div>
 </div>
 

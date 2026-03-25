@@ -126,7 +126,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($votersList as $voter)
+                            @if(count($votersList) > 0)
+                            @foreach($votersList as $voter)
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
@@ -138,11 +139,12 @@
                                     </td>
                                     <td class="pe-4">{{ $voter->user->email }}</td>
                                 </tr>
-                            @empty
+                            @endforeach
+                            @else
                                 <tr>
                                     <td colspan="4" class="text-center py-5 text-muted">No approved voters found in this Panchayat.</td>
                                 </tr>
-                            @endforelse
+                            @endif
                         </tbody>
                     </table>
                 </div>

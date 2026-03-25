@@ -24,7 +24,7 @@ class Voter extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     // Helper to access Panchayat via User
     public function getPanchayatAttribute()
     {

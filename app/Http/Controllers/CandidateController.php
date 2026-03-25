@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OtpMail;
+use App\Models\Candidate;
+use App\Models\Panchayat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\OtpMail;
-use App\Models\Panchayat;
-use App\Models\Candidate;
 
 class CandidateController extends Controller
 {
     public function showRegistrationForm()
     {
         $panchayats = Panchayat::all();
+
         return view('candidate.register', compact('panchayats'));
     }
 
@@ -24,7 +25,7 @@ class CandidateController extends Controller
         $user = Auth::user();
         $candidate = $user->candidate;
 
-        if (!$candidate || $candidate->status !== 'approved') {
+        if (! $candidate || $candidate->status !== 'approved') {
             return redirect()->route('welcome')->with('error', 'Your candidate application is not yet approved.');
         }
 
@@ -42,7 +43,7 @@ class CandidateController extends Controller
 
         $opponents = Candidate::whereHas('user', function ($q) use ($panchayat, $user) {
             $q->where('panchayat_id', $panchayat->id)
-              ->where('id', '!=', $user->id);
+                ->where('id', '!=', $user->id);
         })->where('status', 'approved')->with('user')->get();
 
         $votersList = \App\Models\Voter::whereHas('user', function ($q) use ($panchayat) {
@@ -74,7 +75,7 @@ class CandidateController extends Controller
             'dob.before_or_equal' => 'You must be at least 21 years old to apply as a candidate.',
         ]);
 
-        $fullName = trim($request->first_name . ' ' . ($request->middle_name ?? '') . ' ' . $request->last_name);
+        $fullName = trim($request->first_name.' '.($request->middle_name ?? '').' '.$request->last_name);
         $fullName = ucwords(strtolower(preg_replace('/\s+/', ' ', $fullName)));
 
         $email = strtolower($request->email);
@@ -82,7 +83,7 @@ class CandidateController extends Controller
         $isExistingUser = (bool) $user;
 
         if ($user) {
-            if (!Hash::check($request->password, $user->password)) {
+            if (! Hash::check($request->password, $user->password)) {
                 return back()->withErrors([
                     'password' => 'This email already exists. Please enter the correct account password.',
                 ])->withInput();
@@ -151,7 +152,7 @@ class CandidateController extends Controller
         try {
             Mail::to($user->email)->send(new OtpMail($otp));
         } catch (\Exception $e) {
-            Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: " . $e->getMessage());
+            Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: ".$e->getMessage());
         }
 
         session(['register_email' => $user->email]);

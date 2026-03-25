@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OtpMail;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\OtpMail;
-use App\Models\User;
 
 class ForgotPasswordController extends Controller
 {
@@ -28,7 +28,7 @@ class ForgotPasswordController extends Controller
 
         // ✅ Store hashed OTP
         $user->update([
-            'otp'            => Hash::make($otp),
+            'otp' => Hash::make($otp),
             'otp_expires_at' => now()->addMinutes(5),
         ]);
 
@@ -39,7 +39,7 @@ class ForgotPasswordController extends Controller
         try {
             Mail::to($user->email)->send(new OtpMail($otp));
         } catch (\Exception $e) {
-            Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: " . $e->getMessage());
+            Log::warning("Real Email failed to send to {$user->email}, but OTP is in logs: ".$e->getMessage());
         }
 
         session(['reset_email' => $user->email]);
@@ -51,9 +51,10 @@ class ForgotPasswordController extends Controller
     // Step 3: Show OTP + new password form
     public function showReset()
     {
-        if (!session('reset_email')) {
+        if (! session('reset_email')) {
             return redirect()->route('password.request');
         }
+
         return view('auth.reset-password');
     }
 
@@ -61,19 +62,19 @@ class ForgotPasswordController extends Controller
     public function reset(Request $request)
     {
         $request->validate([
-            'otp'                  => 'required|digits:6',
-            'password'             => 'required|min:8|confirmed',
+            'otp' => 'required|digits:6',
+            'password' => 'required|min:8|confirmed',
         ]);
 
         $email = session('reset_email');
-        $user  = User::where('email', $email)->first();
+        $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('password.request')->with('error', 'Session expired. Please try again.');
         }
 
         // ✅ Secure OTP check
-        if (!Hash::check($request->otp, $user->otp)) {
+        if (! Hash::check($request->otp, $user->otp)) {
             return back()->withErrors(['otp' => 'Invalid OTP. Please try again.']);
         }
 
@@ -83,8 +84,8 @@ class ForgotPasswordController extends Controller
 
         // Update password and clear OTP
         $user->update([
-            'password'       => Hash::make($request->password),
-            'otp'            => null,
+            'password' => Hash::make($request->password),
+            'otp' => null,
             'otp_expires_at' => null,
         ]);
 

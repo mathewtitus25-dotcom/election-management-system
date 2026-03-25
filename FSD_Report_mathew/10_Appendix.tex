@@ -1,0 +1,60 @@
+\chapter{APPENDIX}
+
+\section{Minimum Software Requirements}
+
+\medskip
+\textbf{Operating System}: Windows 10/11, macOS, or Linux
+\\\\
+\textbf{Web Browser}: Google Chrome, Mozilla Firefox, or Microsoft Edge (latest version recommended)
+\\\\
+\textbf{Backend Framework}: Laravel 12
+\\\\
+\textbf{Programming Language}: PHP 8.2 or higher
+\\\\
+\textbf{Database}: MySQL 8.0 or higher
+\\\\
+\textbf{Web Server}: PHP Built-in Development Server, Apache, or Nginx
+\\\\
+\textbf{Dependency Managers}: Composer (for PHP packages), NPM (for frontend JavaScript assets)
+\\\\
+\textbf{Build Tool}: Vite 7 (for compiling and bundling frontend assets)
+\\\\
+\textbf{Mail Service}: Gmail SMTP (requires a Gmail App Password for OTP and notification emails)
+\\\\
+\textbf{Development Tools (Optional)}: Visual Studio Code, Git, Postman
+
+\section{Minimum Hardware Requirements}
+
+\textbf{Processor}: Intel Core i3 / i5 (or AMD equivalent) or higher for smooth server performance.
+\\\\
+\textbf{RAM}: 4 GB minimum (8 GB recommended for comfortable development with multiple services running).
+\\\\
+\textbf{Storage}: At least 500 MB free disk space for project files, vendor dependencies, and database storage.
+\\\\
+\textbf{Display}: 1366x768 resolution or higher for proper dashboard interface rendering.
+\\\\
+\textbf{Input Devices}: Keyboard, mouse, and a functional web camera (required for voter photo capture during vote casting).
+\\\\
+\textbf{Network Connectivity}: Stable internet connection required for OTP email delivery via Gmail SMTP. Local network is sufficient for system navigation.
+\\\\
+
+\section{Default System Credentials}
+
+The following credentials are seeded into the system by the \texttt{DatabaseSeeder} and should be changed before any production deployment:
+
+\medskip
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Role} & \textbf{Email} & \textbf{Password} \\
+\hline
+System Administrator & admin@example.com & password \\
+\hline
+\end{tabular}
+\caption{Default Seeded System Credentials}
+\label{tab:credentials}
+\end{table}
+
+BLO accounts are created manually by the administrator through the Admin Dashboard. Voter and Candidate accounts are created through their respective public registration forms.

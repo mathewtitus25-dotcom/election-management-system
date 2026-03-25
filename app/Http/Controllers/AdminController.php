@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\User;
+use App\Mail\CandidateApprovedMail;
 use App\Models\BLO;
-use App\Models\Panchayat;
 use App\Models\Candidate;
 use App\Models\ElectionConfig;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Panchayat;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\CandidateApprovedMail;
-
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -21,24 +19,24 @@ class AdminController extends Controller
     {
         $panchayats = Panchayat::all();
         $blos = BLO::with(['user.panchayat'])->get();
-        
+
         // Candidates management
         $pendingCandidates = Candidate::where('status', 'pending')->with('user.panchayat')->get();
         $approvedCandidates = Candidate::where('status', 'approved')->with('user.panchayat')->get();
-        
+
         $electionConfig = ElectionConfig::first();
-        if (!$electionConfig) {
+        if (! $electionConfig) {
             $electionConfig = ElectionConfig::create(['is_active' => false]);
         }
 
         // ✅ Admin Dashboard Stats
         $stats = [
-            'total_panchayats'    => Panchayat::count(),
-            'total_approved_voters'   => \App\Models\Voter::where('status', 'approved')->count(),
+            'total_panchayats' => Panchayat::count(),
+            'total_approved_voters' => \App\Models\Voter::where('status', 'approved')->count(),
             'total_approved_candidates' => Candidate::where('status', 'approved')->count(),
-            'total_pending_voters'    => \App\Models\Voter::where('status', 'pending')->count(),
-            'total_votes_cast'    => \App\Models\Voter::where('has_voted', true)->count(),
-            'total_blos'          => BLO::count(),
+            'total_pending_voters' => \App\Models\Voter::where('status', 'pending')->count(),
+            'total_votes_cast' => \App\Models\Voter::where('has_voted', true)->count(),
+            'total_blos' => BLO::count(),
         ];
 
         return view('admin.dashboard', compact('panchayats', 'blos', 'pendingCandidates', 'approvedCandidates', 'electionConfig', 'stats'));
@@ -75,17 +73,19 @@ class AdminController extends Controller
             return back()->with('success', 'BLO created successfully.');
         } catch (\Exception $e) {
             Log::error('BLO creation failed', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Failed to create BLO: ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'Failed to create BLO: '.$e->getMessage()])->withInput();
         }
     }
 
     public function toggleBLO($id)
     {
         $blo = BLO::findOrFail($id);
-        $blo->is_active = !$blo->is_active;
+        $blo->is_active = ! $blo->is_active;
         $blo->save();
 
         $status = $blo->is_active ? 'activated' : 'deactivated';
+
         return back()->with('success', "BLO {$status} successfully.");
     }
 
@@ -93,35 +93,45 @@ class AdminController extends Controller
     {
         $config = ElectionConfig::first();
         $isActive = $request->has('is_active');
-        
+
         $config->update([
             'is_active' => $isActive,
-            'start_time' => $isActive ? now() : $config->start_time,
-            'end_time' => !$isActive ? now() : null,
+            'start_date' => $isActive ? now() : $config->start_date,
+            'end_date' => ! $isActive ? now() : null,
         ]);
 
         if ($isActive) {
             // Reset all panchayats for a new election cycle
             Panchayat::query()->update([
                 'is_result_published' => false,
-                'was_published' => false
+                'was_published' => false,
             ]);
+
+            // Clear all cast votes from previous election
+            \App\Models\Vote::truncate();
+
+            // Reset candidate vote counts
+            \App\Models\Candidate::query()->update(['votes_count' => 0]);
+
+            // Reset voter voting status so they can vote again
+            \App\Models\Voter::query()->update(['has_voted' => false]);
         }
 
         $status = $isActive ? 'Started' : 'Stopped';
+
         return back()->with('success', "Election {$status} successfully.");
     }
 
     public function approveCandidate($id)
     {
         $candidate = Candidate::findOrFail($id);
-        
+
         // Generate a unique Candidate ID if not already set
-        if (!$candidate->candidate_id) {
-            $candidate->candidate_id = 'CAND-' . strtoupper(Str::random(6));
+        if (! $candidate->candidate_id) {
+            $candidate->candidate_id = 'CAND-'.strtoupper(Str::random(6));
             // Ensure uniqueness
             while (Candidate::where('candidate_id', $candidate->candidate_id)->exists()) {
-                $candidate->candidate_id = 'CAND-' . strtoupper(Str::random(6));
+                $candidate->candidate_id = 'CAND-'.strtoupper(Str::random(6));
             }
         }
 
@@ -132,14 +142,14 @@ class AdminController extends Controller
         $user = $candidate->user;
         $user->update([
             'role' => 'candidate',
-            'is_verified' => true
+            'is_verified' => true,
         ]);
 
-        Log::info("Notification: Candidate Approved", [
+        Log::info('Notification: Candidate Approved', [
             'candidate_name' => $user->name,
             'candidate_id' => $candidate->candidate_id,
             'email' => $user->email,
-            'panchayat' => $user->panchayat->name ?? 'N/A'
+            'panchayat' => $user->panchayat->name ?? 'N/A',
         ]);
 
         // Send Email to candidate
@@ -150,10 +160,9 @@ class AdminController extends Controller
                 $user->panchayat->name ?? 'N/A'
             ));
         } catch (\Exception $e) {
-            Log::error("Failed to send approval email to candidate '{$user->name}': " . $e->getMessage());
+            Log::error("Failed to send approval email to candidate '{$user->name}': ".$e->getMessage());
             // Optionally, we could continue since the approval itself succeeded
         }
-
 
         return back()->with('success', "Candidate '{$user->name}' approved! Candidate ID: {$candidate->candidate_id}");
     }
@@ -162,12 +171,13 @@ class AdminController extends Controller
     {
         $candidate = Candidate::findOrFail($id);
         $candidate->update(['status' => 'rejected']);
+
         return back()->with('success', 'Candidate rejected.');
     }
 
     public function votersList(Request $request)
     {
-        $panchayats = Panchayat::with(['users' => function($q) {
+        $panchayats = Panchayat::with(['users' => function ($q) {
             $q->whereHas('voter')->with('voter');
         }])->get();
 
@@ -180,14 +190,15 @@ class AdminController extends Controller
         $user = $candidate->user;
 
         // If user has NO voter profile: Delete User (cascades to Candidate)
-        if (!$user->voter) {
+        if (! $user->voter) {
             $user->delete();
+
             return back()->with('success', "Candidate '{$user->name}' and their account removed.");
         }
 
         // If user HAS voter profile: Delete only Candidate record
         $candidate->delete();
-        
+
         // Also reset user role to voter if it was candidate
         if ($user->role === 'candidate') {
             $user->update(['role' => 'voter']);
@@ -204,8 +215,8 @@ class AdminController extends Controller
             // Delete the associated Voter profile
             if ($user->voter) {
                 // Remove captured photo if exists
-                if ($user->voter->captured_photo && \Illuminate\Support\Facades\Storage::exists('public/' . $user->voter->captured_photo)) {
-                    \Illuminate\Support\Facades\Storage::delete('public/' . $user->voter->captured_photo);
+                if ($user->voter->captured_photo && \Illuminate\Support\Facades\Storage::exists('public/'.$user->voter->captured_photo)) {
+                    \Illuminate\Support\Facades\Storage::delete('public/'.$user->voter->captured_photo);
                 }
                 $user->voter()->delete();
             }
