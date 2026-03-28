@@ -110,7 +110,7 @@
                                         data-voterid="{{ $voter->voter_id_number }}"
                                         data-dob="{{ $voter->dob }}"
                                         data-panchayat="{{ $panchayat->name }}"
-                                        data-photo="{{ $voter->captured_photo ? asset('storage/' . $voter->captured_photo) : '' }}">
+                                        data-photo="{{ $voter->captured_photo ? Storage::url($voter->captured_photo) : '' }}">
                                         <td class="ps-3">
                                             <div class="fw-bold text-primary">{{ $voter->user->name }}</div>
                                             <div class="small text-muted">{{ $voter->voter_id_number }}</div>

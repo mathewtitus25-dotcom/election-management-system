@@ -510,7 +510,7 @@
                 <div class="row align-items-center mb-4 text-center text-md-start bg-white p-3 rounded shadow-sm border">
                     <div class="col-md-3 mb-3 mb-md-0 d-flex justify-content-center">
                         @if($modalCandidate->photo)
-                            <img src="{{ asset('storage/' . $modalCandidate->photo) }}" class="rounded shadow border border-3 border-white" width="120" height="150" style="object-fit:cover;" alt="Candidate Photo">
+                            <img src="{{ Storage::url($modalCandidate->photo) }}" class="rounded shadow border border-3 border-white" width="120" height="150" style="object-fit:cover;" alt="Candidate Photo">
                         @else
                             <div class="rounded shadow d-flex align-items-center justify-content-center bg-secondary text-white" style="width:120px; height:150px;">No Photo</div>
                         @endif

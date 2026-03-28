@@ -198,7 +198,7 @@
                                         @if($u->voter->has_voted && $u->voter->captured_photo)
                                             <div class="text-center">
                                                 <small class="d-block text-muted mb-1 fw-bold" style="font-size: 0.65rem;">CAPTURED IMAGE</small>
-                                                <img src="{{ asset('storage/' . $u->voter->captured_photo) }}" 
+                                                <img src="{{ Storage::url($u->voter->captured_photo) }}" 
                                                      class="captured-photo-thumb" 
                                                      alt="Verification Photo"
                                                      data-bs-toggle="modal" 
@@ -217,7 +217,7 @@
                                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <div class="modal-body p-0">
-                                                    <img src="{{ asset('storage/' . $u->voter->captured_photo) }}" class="w-100" alt="Full Verification Photo">
+                                                    <img src="{{ Storage::url($u->voter->captured_photo) }}" class="w-100" alt="Full Verification Photo">
                                                 </div>
                                                 <div class="modal-footer bg-light border-0">
                                                     <div class="w-100 d-flex justify-content-between align-items-center">

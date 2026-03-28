@@ -88,7 +88,7 @@ class VoterController extends Controller
         }
 
         $photoPath = 'voter_photos/'.$photoName;
-        \Illuminate\Support\Facades\Storage::disk('public')->put($photoPath, $photoImage);
+        \Illuminate\Support\Facades\Storage::put($photoPath, $photoImage);
 
         // ✅ Wrapped in DB transaction to ensure integrity
         DB::transaction(function () use ($user, $voter, $candidate, $photoPath) {

@@ -24,7 +24,7 @@
             <div class="d-flex gap-4 text-muted align-items-center mb-3">
                 @if($voter->captured_photo)
                     <div class="position-relative">
-                        <img src="{{ asset('storage/' . $voter->captured_photo) }}" 
+                        <img src="{{ Storage::url($voter->captured_photo) }}" 
                              alt="Verification Photo" 
                              class="rounded-circle border border-4 border-white shadow-sm" 
                              style="width: 80px; height: 80px; object-fit: cover;">
@@ -80,7 +80,7 @@
                             <div class="col-md-3 text-center mb-4 mb-md-0">
                                 @if($winningCandidate->photo)
                                     <div class="rounded-circle d-inline-block shadow-sm border border-4 border-white mb-3" style="width: 140px; height: 140px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1)!important;">
-                                        <img src="{{ asset('storage/' . $winningCandidate->photo) }}" alt="Winner Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <img src="{{ Storage::url($winningCandidate->photo) }}" alt="Winner Photo" style="width: 100%; height: 100%; object-fit: cover;">
                                     </div>
                                 @else
                                     <div class="bg-light rounded-circle p-4 d-inline-block text-success fw-bold display-3 shadow-sm border border-4 border-white mb-3" style="width: 140px; height: 140px; line-height: 80px; box-shadow: 0 0 20px rgba(0,0,0,0.1)!important;">
@@ -159,7 +159,7 @@
                                 <div class="d-flex align-items-center mb-3">
                                     @if($candidate->photo)
                                         <div class="rounded-circle me-3 shadow-sm border overflow-hidden" style="width: 60px; height: 60px;">
-                                            <img src="{{ asset('storage/' . $candidate->photo) }}" alt="Candidate Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <img src="{{ Storage::url($candidate->photo) }}" alt="Candidate Photo" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                     @else
                                         <div class="bg-light rounded-circle p-3 me-3 text-primary fw-bold fs-4 shadow-sm border" style="width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;">
@@ -200,7 +200,7 @@
                                         <div class="text-center mb-4">
                                             @if($candidate->photo)
                                                 <div class="rounded-circle d-inline-block shadow-sm border mb-3 overflow-hidden" style="width: 100px; height: 100px;">
-                                                    <img src="{{ asset('storage/' . $candidate->photo) }}" alt="Candidate Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                                    <img src="{{ Storage::url($candidate->photo) }}" alt="Candidate Photo" style="width: 100%; height: 100%; object-fit: cover;">
                                                 </div>
                                             @else
                                                 <div class="bg-light rounded-circle p-4 d-inline-block text-primary fw-bold fs-1 shadow-sm border mb-3" style="width: 100px; height: 100px; line-height: 50px;">

@@ -111,7 +111,7 @@ class CandidateController extends Controller
 
         $photoPath = null;
         if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('candidate_photos', 'public');
+            $photoPath = $request->file('photo')->store('candidate_photos');
         }
 
         $candidateData = [

@@ -82,7 +82,7 @@
                                 <div class="d-flex align-items-center mb-2">
                                     @if($opponent->photo)
                                         <div class="rounded-circle me-3 overflow-hidden shadow-sm" style="width: 40px; height: 40px;">
-                                            <img src="{{ asset('storage/' . $opponent->photo) }}" alt="Opponent Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <img src="{{ Storage::url($opponent->photo) }}" alt="Opponent Photo" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                     @else
                                         <div class="bg-light rounded-circle p-2 me-3 text-secondary" style="width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
