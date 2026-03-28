@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('votes', function (Blueprint $table) {
-            $table->dropForeign(['voter_id']);
-            $table->dropColumn('voter_id');
+            // Drop the unique index first (SQLite requires this before dropping the column)
+            if (Schema::hasColumn('votes', 'voter_id')) {
+                try { $table->dropUnique(['voter_id']); } catch (\Exception $e) {}
+                try { $table->dropForeign(['voter_id']); } catch (\Exception $e) {}
+                $table->dropColumn('voter_id');
+            }
         });
     }
 
