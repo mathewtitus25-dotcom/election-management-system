@@ -58,14 +58,6 @@
                                 </div>
                                 @error('candidate_email') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
-                            <div class="mb-3">
-                                <label for="candidate_key" class="form-label small fw-bold">Candidate Key</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
-                                    <input type="text" class="form-control border-start-0" id="candidate_key" name="candidate_key" placeholder="Enter Candidate Key">
-                                </div>
-                                @error('candidate_key') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                            </div>
                         </div>
 
                         <!-- Admin/BLO Fields -->
@@ -144,23 +136,19 @@
         // Reset required attributes based on role
         const loginIdentifier = document.getElementById('login_identifier');
         const candidateEmail = document.getElementById('candidate_email');
-        const candidateKeyInput = document.getElementById('candidate_key');
         const adminEmail = document.getElementById('admin_email');
 
         if (role === 'voter') {
             loginIdentifier.required = true;
             candidateEmail.required = false;
-            candidateKeyInput.required = false;
             adminEmail.required = false;
         } else if (role === 'candidate') {
             loginIdentifier.required = false;
             candidateEmail.required = true;
-            candidateKeyInput.required = true;
             adminEmail.required = false;
         } else {
             loginIdentifier.required = false;
             candidateEmail.required = false;
-            candidateKeyInput.required = false;
             adminEmail.required = true;
         }
     }
