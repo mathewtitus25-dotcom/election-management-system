@@ -38,6 +38,8 @@ class AuthController extends Controller
 
         $email = '';
         $password = $request->input('password');
+        $candidateKey = trim($request->input('candidate_key')); // using candidate_key parameter
+
         // 1. Gather credentials based on the selected tab
         if ($tab === 'voter') {
             $loginInput = trim($request->input('login_identifier'));
@@ -53,6 +55,9 @@ class AuthController extends Controller
             }
         } elseif ($tab === 'candidate') {
             $email = trim(strtolower($request->input('candidate_email')));
+            if (empty($candidateKey)) {
+                return back()->withErrors(['candidate_key' => 'Candidate Key is required.'])->withInput();
+            }
         } else {
             // Admin/BLO
             $email = trim(strtolower($request->input('admin_email')));
@@ -112,17 +117,20 @@ class AuthController extends Controller
 
         } elseif ($tab === 'candidate') {
             // Candidate Login Tab:
-            // Verify: a) User exists in candidates table
+            // Verify: a) User exists in candidates table b) candidate_key matches
             $candidate = \App\Models\Candidate::where('user_id', $user->id)->first();
 
-            if (! $candidate) {
-                // If candidate record does not exist:
+            // Accommodate schema where column might be candidate_key or candidate_id
+            $dbCandidateKey = $candidate->candidate_key ?? ($candidate->candidate_id ?? null);
+
+            if (! $candidate || $dbCandidateKey !== $candidateKey) {
+                // If candidate record does not exist OR key is invalid:
                 // Immediately logout and return validation error.
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                return back()->withErrors(['candidate_email' => 'You are not registered as a candidate.'])->withInput();
+                return back()->withErrors(['candidate_key' => 'Invalid Candidate Key or you are not registered as a candidate.'])->withInput();
             }
 
             // Optional: Block unapproved candidates
