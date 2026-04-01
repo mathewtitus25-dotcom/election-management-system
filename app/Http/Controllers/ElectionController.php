@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Panchayat;
+use Illuminate\Support\Facades\Cache;
 
 class ElectionController extends Controller
 {
@@ -10,9 +11,11 @@ class ElectionController extends Controller
     {
         $isActive = \App\Models\ElectionConfig::first()->is_active ?? false;
 
-        $results = Panchayat::with(['candidates' => function ($q) {
-            $q->where('status', 'approved')->with('user')->orderBy('votes_count', 'desc');
-        }])->get();
+        $results = Cache::remember('election.results', 60, function () {
+            return Panchayat::with(['candidates' => function ($q) {
+                $q->where('status', 'approved')->with('user')->orderBy('votes_count', 'desc');
+            }])->get();
+        });
 
         return view('election.results', compact('results', 'isActive'));
     }

@@ -1,72 +1,25 @@
-<style>
-    /* Outer pill container */
-    .pill-nav {
-        max-width: 1100px;
-        margin: 30px auto;
-        background: rgba(255,255,255,0.95);
-        border-radius: 999px;
-        padding: 10px;
-        box-shadow: 0 30px 60px rgba(79,70,229,0.18);
-        display: flex;
-        gap: 8px;
-    }
+@php
+    $resultsLink = Auth::check() ? route('results') : route('login');
+@endphp
 
-    /* Nav item */
-    .pill-nav a {
-        flex: 1;
-        text-align: center;
-        padding: 14px 20px;
-        border-radius: 999px;
-        font-weight: 600;
-        text-decoration: none;
-        color: rgba(55,65,81,0.85);
-        transition: all 0.25s ease;
-    }
-
-    /* Hover only text */
-    .pill-nav a:not(.active):hover {
-        color: #4f46e5;
-    }
-
-    /* Active pill */
-    .pill-nav a.active {
-        background: linear-gradient(90deg,#4f46e5,#818cf8);
-        color: #ffffff;
-        box-shadow: 0 12px 30px rgba(79,70,229,0.45);
-    }
-
-    /* Mobile wrap */
-    @media (max-width: 768px) {
-        .pill-nav {
-            flex-wrap: wrap;
-            border-radius: 28px;
-        }
-
-        .pill-nav a {
-            flex: 1 1 100%;
-        }
-    }
-</style>
-
-<!-- PILL NAVIGATION -->
-<nav class="pill-nav">
-
-    <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
+<nav class="marketing-tabs" data-reveal>
+    <a href="{{ route('welcome') }}" class="marketing-tabs__link {{ request()->routeIs('welcome') ? 'is-active' : '' }}">
+        <i class="bi bi-house-door"></i>
         Home
     </a>
 
-    <a href="{{ route('register') }}"
-       class="{{ request()->is('register') ? 'active' : '' }}">
+    <a href="{{ route('register') }}" class="marketing-tabs__link {{ request()->routeIs('register') ? 'is-active' : '' }}">
+        <i class="bi bi-person-plus"></i>
         Register as Voter
     </a>
-    <a href="{{ route('candidate.register') }}"
-       class="{{ request()->is('candidate/apply') ? 'active' : '' }}">
+
+    <a href="{{ route('candidate.register') }}" class="marketing-tabs__link {{ request()->routeIs('candidate.register') ? 'is-active' : '' }}">
+        <i class="bi bi-person-badge"></i>
         Apply as Candidate
     </a>
 
-    <a href="{{ route('results') }}"
-       class="{{ request()->is('results') ? 'active' : '' }}">
-        Results
+    <a href="{{ $resultsLink }}" class="marketing-tabs__link {{ request()->routeIs('results') ? 'is-active' : '' }}">
+        <i class="bi bi-bar-chart-line"></i>
+        {{ Auth::check() ? 'Results' : 'Login for Results' }}
     </a>
-
 </nav>

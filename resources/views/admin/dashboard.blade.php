@@ -1,568 +1,413 @@
 @extends('layouts.app')
 
+@section('page_title', 'Admin')
+@section('page_subtitle', 'Manage officers, approvals, and election state.')
+
 @section('content')
-<style>
-    :root {
-        --admin-blue-dark: #1e3a8a;
-        --admin-blue-main: #2563eb;
-        --admin-blue-light: #eff6ff;
-        --admin-blue-border: #3b82f6;
-        --admin-bg: #f8fafc;
-        --admin-card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-    }
+@php
+    $combinedCandidates = $pendingCandidates->merge($approvedCandidates);
+    $topCandidateLabel = str_contains($stats['top_candidate'], ' (') ? \Illuminate\Support\Str::before($stats['top_candidate'], ' (') : $stats['top_candidate'];
+    $topCandidateMeta = str_contains($stats['top_candidate'], ' (') ? trim(\Illuminate\Support\Str::after($stats['top_candidate'], ' ('), ')') : 'Current front-runner by vote total.';
+    $adminChartConfig = [
+        'type' => 'bar',
+        'data' => [
+            'labels' => array_keys($stats['votes_per_panchayat']),
+            'datasets' => [[
+                'label' => 'Votes Cast',
+                'data' => array_values($stats['votes_per_panchayat']),
+                'backgroundColor' => ['rgba(20, 89, 217, 0.82)', 'rgba(15, 157, 143, 0.78)', 'rgba(79, 139, 244, 0.72)', 'rgba(25, 135, 84, 0.7)'],
+                'borderRadius' => 12,
+                'borderSkipped' => false,
+                'barThickness' => 36,
+            ]],
+        ],
+        'options' => [
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => ['display' => false],
+            ],
+            'scales' => [
+                'y' => [
+                    'beginAtZero' => true,
+                    'grid' => ['color' => 'rgba(88, 112, 134, 0.14)'],
+                    'ticks' => ['precision' => 0],
+                ],
+                'x' => [
+                    'grid' => ['display' => false],
+                ],
+            ],
+        ],
+    ];
+@endphp
 
-    body {
-        background-color: var(--admin-bg);
-        color: #334155;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-
-    .admin-header-title {
-        color: var(--admin-blue-dark);
-        border-left: 5px solid var(--admin-blue-main);
-        padding-left: 1rem;
-    }
-
-    .stat-card {
-        background: white;
-        border: none;
-        border-top: 4px solid var(--admin-blue-border);
-        border-radius: 8px;
-        box-shadow: var(--admin-card-shadow);
-        transition: transform 0.2s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-3px);
-    }
-
-    .stat-icon {
-        color: var(--admin-blue-main);
-        background: var(--admin-blue-light);
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        font-size: 1.5rem;
-    }
-
-    .stat-value {
-        color: var(--admin-blue-dark);
-        font-size: 1.75rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .stat-label {
-        color: #64748b;
-        font-weight: 500;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-    }
-
-    .admin-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: var(--admin-card-shadow);
-        overflow: hidden;
-    }
-
-    .admin-card .card-header {
-        background-color: white;
-        border-bottom: 1px solid #f1f5f9;
-        padding: 1.25rem;
-        font-weight: 700;
-        color: var(--admin-blue-dark);
-    }
-
-    .nav-pills-admin .nav-link {
-        color: #64748b;
-        font-weight: 600;
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-    .nav-pills-admin .nav-link.active {
-        background-color: var(--admin-blue-main) !important;
-        color: white !important;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
-    }
-
-    .nav-pills-admin .nav-link:not(.active):hover {
-        background-color: var(--admin-blue-light);
-        color: var(--admin-blue-main);
-    }
-
-    .table thead th {
-        background-color: #f8fafc;
-        color: #475569;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .table td {
-        padding: 1rem;
-        vertical-align: middle;
-        color: #334155;
-    }
-
-    .btn-admin-primary {
-        background-color: var(--admin-blue-main);
-        border: none;
-        color: white;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 0.625rem 1.25rem;
-        transition: all 0.2s;
-    }
-
-    .btn-admin-primary:hover {
-        background-color: var(--admin-blue-dark);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-    }
-
-    .badge-admin-success {
-        background-color: #dcfce7;
-        color: #166534;
-        font-weight: 600;
-    }
-
-    .badge-admin-danger {
-        background-color: #fee2e2;
-        color: #991b1b;
-        font-weight: 600;
-    }
-</style>
-
-<div class="row align-items-center mb-5">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="admin-header-title fw-bold">Admin Dashboard</h2>
-            <p class="text-muted ms-3 mb-0">Institutional management of BLOs, Candidates, and Election Controls.</p>
-        </div>
-        <div>
-            <a href="{{ route('admin.voters.index') }}" class="btn btn-admin-primary shadow-sm hover-up">
-                <i class="bi bi-person-video2 me-2"></i> Voter Verification Logs
+<div class="page-shell">
+    <x-ui.page-header eyebrow="Election Operations" title="Admin control room" subtitle="Core status, officer management, and approvals in one place.">
+        <x-slot:actions>
+            <a href="{{ route('admin.voters.index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-list-columns-reverse"></i>
+                Verification Logs
             </a>
-        </div>
-    </div>
-</div>
+        </x-slot:actions>
+        <span class="status-pill {{ $electionConfig->is_active ? 'status-pill--success' : 'status-pill--warning' }}">
+            <i class="bi {{ $electionConfig->is_active ? 'bi-broadcast-pin' : 'bi-pause-circle' }}"></i>
+            Election {{ $electionConfig->is_active ? 'Live' : 'Paused' }}
+        </span>
+        <span class="info-chip">
+            <i class="bi bi-hourglass-split"></i>
+            {{ $pendingCandidates->count() }} pending candidate review{{ $pendingCandidates->count() === 1 ? '' : 's' }}
+        </span>
+    </x-ui.page-header>
 
-<!-- ✅ Unified Blue Stats Grid (1 Mobile, 2 Tablet, 3 Desktop) -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
-    <!-- Panchayats -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-geo-alt-fill"></i></div>
-                <div class="stat-label mb-1">Panchayats</div>
-                <div class="stat-value">{{ $stats['total_panchayats'] }}</div>
+    <section class="surface-card surface-card--padded content-auto" data-reveal>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <div class="muted-label">Officer Management</div>
+                <h2 class="mb-1">Add BLO</h2>
+                <p class="helper-copy mb-0">Create and assign an officer.</p>
             </div>
+            <span class="info-chip">
+                <i class="bi bi-shield-plus"></i>
+                {{ $stats['total_blos'] }} BLOs
+            </span>
         </div>
-    </div>
-    <!-- Approved Voters -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-person-check-fill"></i></div>
-                <div class="stat-label mb-1">Approved Voters</div>
-                <div class="stat-value">{{ $stats['total_approved_voters'] }}</div>
-            </div>
-        </div>
-    </div>
-    <!-- Pending Voters -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-hourglass-split"></i></div>
-                <div class="stat-label mb-1">Pending Voters</div>
-                <div class="stat-value text-warning">{{ $stats['total_pending_voters'] }}</div>
-            </div>
-        </div>
-    </div>
-    <!-- Candidates -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-person-badge-fill"></i></div>
-                <div class="stat-label mb-1">Candidates</div>
-                <div class="stat-value">{{ $stats['total_approved_candidates'] }}</div>
-            </div>
-        </div>
-    </div>
-    <!-- Votes Cast -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-box-fill"></i></div>
-                <div class="stat-label mb-1">Votes Cast</div>
-                <div class="stat-value">{{ $stats['total_votes_cast'] }}</div>
-            </div>
-        </div>
-    </div>
-    <!-- BLO Officers -->
-    <div class="col">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-                <div class="stat-icon mb-3"><i class="bi bi-shield-check"></i></div>
-                <div class="stat-label mb-1">BLO Officers</div>
-                <div class="stat-value">{{ $stats['total_blos'] }}</div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        <ul class="nav nav-pills nav-pills-admin mb-4 bg-white p-2 rounded shadow-sm gap-2" id="adminTab" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" id="blos-tab" data-bs-toggle="tab" data-bs-target="#blos" type="button">
-                    <i class="bi bi-people-fill me-2"></i>BLO Management
+        <form action="{{ route('admin.blo.create') }}" method="POST" class="row g-3 prevent-double" data-pending-text="Creating BLO...">
+            @csrf
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="blo_name" class="form-label fw-semibold">Name</label>
+                <input type="text" id="blo_name" name="name" value="{{ old('name') }}" class="form-control" required>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="blo_email" class="form-label fw-semibold">Email</label>
+                <input type="email" id="blo_email" name="email" value="{{ old('email') }}" class="form-control" required>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="blo_password" class="form-label fw-semibold">Password</label>
+                <input type="password" id="blo_password" name="password" class="form-control" required>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="blo_panchayat" class="form-label fw-semibold">Panchayat</label>
+                <select id="blo_panchayat" name="panchayat_id" class="form-select" required>
+                    <option value="">Select Panchayat</option>
+                    @foreach($panchayats as $panchayat)
+                        <option value="{{ $panchayat->id }}" {{ old('panchayat_id') == $panchayat->id ? 'selected' : '' }}>
+                            {{ $panchayat->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i>
+                    Create BLO
                 </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="candidates-tab" data-bs-toggle="tab" data-bs-target="#candidates" type="button">
-                    <i class="bi bi-person-badge-fill me-2"></i>Candidate Applications
-                    @if($pendingCandidates->count() > 0)
-                        <span class="badge rounded-pill bg-danger ms-2">{{ $pendingCandidates->count() }}</span>
+            </div>
+        </form>
+    </section>
+
+    <section class="stat-grid">
+        <x-ui.stat-card label="Approved Voters" value="{{ $stats['total_approved_voters'] }}" icon="bi-people" meta="Verified residents ready for the current election cycle." />
+        <x-ui.stat-card label="Approved Candidates" value="{{ $stats['total_approved_candidates'] }}" icon="bi-megaphone" tone="accent" meta="Nominees that have passed the admin approval workflow." />
+        <x-ui.stat-card label="Overall Turnout" value="{{ $stats['turnout_percentage'] }}%" icon="bi-graph-up-arrow" tone="success" meta="A quick scan of turnout performance across all approved voters." />
+        <x-ui.stat-card label="Leading Candidate" value="{{ $topCandidateLabel }}" icon="bi-trophy" tone="warning" meta="{{ $topCandidateMeta }}" />
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="surface-card chart-card content-auto" data-reveal>
+            <div class="panel-card__header">
+                <div>
+                    <h2 class="panel-card__title">Votes per panchayat</h2>
+                    <p class="panel-card__subtitle">Votes cast by panchayat.</p>
+                </div>
+            </div>
+            <div class="chart-shell">
+                <canvas id="panchayatChart" data-chart-config='@json($adminChartConfig)'></canvas>
+            </div>
+        </article>
+
+        <article class="surface-card surface-card--padded content-auto" data-reveal data-reveal-delay="90">
+            <div class="d-grid gap-3">
+                <div>
+                    <div class="muted-label">Election State</div>
+                    <h2 class="mb-2">{{ $electionConfig->is_active ? 'Voting is currently live.' : 'Voting is currently paused.' }}</h2>
+                    <p class="helper-copy mb-0">Start or stop the election here.</p>
+                </div>
+
+                <div class="candidate-list">
+                    <div class="candidate-list__item">
+                        <span class="icon-badge"><i class="bi bi-building"></i></span>
+                        <div>
+                            <strong class="d-block">{{ $stats['total_panchayats'] }} Panchayats</strong>
+                            <span class="helper-copy">Configured panchayats.</span>
+                        </div>
+                    </div>
+                    <div class="candidate-list__item">
+                        <span class="icon-badge"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <strong class="d-block">{{ $stats['total_blos'] }} BLOs</strong>
+                            <span class="helper-copy">Active officer accounts.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form action="{{ route('admin.election.update') }}" method="POST" class="prevent-double" data-pending-text="{{ $electionConfig->is_active ? 'Stopping election...' : 'Starting election...' }}">
+                    @csrf
+                    @unless($electionConfig->is_active)
+                        <input type="hidden" name="is_active" value="1">
+                    @endunless
+
+                    @if($electionConfig->is_active)
+                        <button class="btn btn-danger btn-lg w-100">
+                            <i class="bi bi-stop-circle"></i>
+                            Emergency Stop
+                        </button>
+                    @else
+                        <button class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-play-circle"></i>
+                            Commence Voting
+                        </button>
                     @endif
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="election-tab" data-bs-toggle="tab" data-bs-target="#election" type="button">
-                    <i class="bi bi-gear-fill me-2"></i>Election Control
-                </button>
-            </li>
-        </ul>
+                </form>
+            </div>
+        </article>
+    </section>
 
-        <div class="tab-content" id="adminTabContent">
-            
-            <!-- BLO Management Tab -->
-            <div class="tab-pane fade show active" id="blos" role="tabpanel">
-                <div class="row g-4">
-                    <div class="col-lg-4">
-                        <div class="card admin-card">
-                            <div class="card-header"><i class="bi bi-plus-circle me-2"></i>Provision New BLO</div>
-                            <div class="card-body p-4">
-                                <form action="{{ route('admin.blo.create') }}" method="POST">
-                                    @csrf
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Full Name</label>
-                                        <input type="text" name="name" class="form-control form-control-lg fs-6 capitalize-input" placeholder="Registration Officer Name" required>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Official Email</label>
-                                        <input type="email" name="email" class="form-control form-control-lg fs-6" placeholder="blo@election.gov.in" required>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Access Password</label>
-                                        <input type="text" name="password" class="form-control form-control-lg fs-6" placeholder="Secure token" required>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Assigned Jurisdiction</label>
-                                        <select name="panchayat_id" class="form-select form-select-lg fs-6" required>
-                                            <option value="" disabled selected>Select Panchayat</option>
-                                            @foreach($panchayats as $p)
-                                                <option value="{{ $p->id }}">{{ $p->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn btn-admin-primary w-100 py-3">
-                                        Authorize Officer <i class="bi bi-check2-circle ms-1"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-8">
-                        <div class="card admin-card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-list-stars me-2"></i>Authorized Personnel</span>
-                                <span class="badge bg-light text-dark border fw-normal">{{ $blos->count() }} Registered</span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Officer Details</th>
-                                                <th>Jurisdiction</th>
-                                                <th>Authorization</th>
-                                                <th class="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(count($blos) > 0)
-                                            @foreach($blos as $blo)
-                                                <tr>
-                                                    <td>
-                                                        <div class="fw-bold">{{ $blo->user->name }}</div>
-                                                        <div class="small text-muted">{{ $blo->user->email }}</div>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-light text-primary border">{{ $blo->user->panchayat->name ?? 'Unassigned' }}</span>
-                                                    </td>
-                                                    <td>
-                                                        @if($blo->is_active)
-                                                            <span class="badge badge-admin-success px-3 py-2 rounded-pill">Active</span>
-                                                        @else
-                                                            <span class="badge badge-admin-danger px-3 py-2 rounded-pill">Suspended</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <form action="{{ route('admin.blo.toggle', $blo->id) }}" method="POST">
-                                                            @csrf
-                                                            <button class="btn btn-sm {{ $blo->is_active ? 'btn-outline-danger' : 'btn-outline-success' }} px-3 fw-bold">
-                                                                {{ $blo->is_active ? 'Suspend' : 'Reinstate' }}
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                            @else
-                                                <tr><td colspan="4" class="text-center py-5 text-muted">No officers found in system database.</td></tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <section class="surface-card content-auto" data-reveal>
+        <div class="panel-card__header">
+            <div>
+                <h2 class="panel-card__title">People and approvals</h2>
+                <p class="panel-card__subtitle">Manage candidates and officers.</p>
             </div>
 
-            <!-- Candidates Tab -->
-            <div class="tab-pane fade" id="candidates" role="tabpanel">
-                <div class="card admin-card">
-                    <div class="card-header bg-white">
-                        <ul class="nav nav-tabs card-header-tabs" id="candidateSubTab" role="tablist">
-                            <li class="nav-item">
-                                <button class="nav-link active fw-bold" id="pending-candidates-tab" data-bs-toggle="tab" data-bs-target="#pending-candidates" type="button">
-                                    Pending Review ({{ $pendingCandidates->count() }})
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link fw-bold" id="approved-candidates-tab" data-bs-toggle="tab" data-bs-target="#approved-candidates" type="button">
-                                    Official Candidates ({{ $approvedCandidates->count() }})
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="tab-content">
-                            <!-- Pending Candidates -->
-                            <div class="tab-pane fade show active" id="pending-candidates">
-                                <div class="row row-cols-1 row-cols-md-2 g-4">
-                                @if(count($pendingCandidates) > 0)
-                                @foreach($pendingCandidates as $candidate)
-                                    <div class="col">
-                                        <div class="card h-100 border border-light shadow-sm">
-                                            <div class="card-header bg-light bg-opacity-50 d-flex justify-content-between align-items-center py-3">
-                                                <h6 class="mb-0 fw-bold text-admin-primary" style="cursor:pointer; text-decoration:underline;" data-bs-toggle="modal" data-bs-target="#adminCandidateModal{{ $candidate->id }}">
-                                                    {{ $candidate->user->name }} <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.8rem;"></i>
-                                                </h6>
-                                                <span class="badge bg-white text-dark border shadow-sm">{{ $candidate->user->panchayat->name }}</span>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row g-2 mb-3 small">
-                                                    <div class="col-6"><strong>Edu:</strong> {{ $candidate->qualification }}</div>
-                                                    <div class="col-6"><strong>Gender:</strong> {{ $candidate->gender }}</div>
-                                                    <div class="col-6"><strong>Voter ID:</strong> {{ $candidate->voter_id }}</div>
-                                                    <div class="col-6"><strong>DOB:</strong> {{ $candidate->dob }}</div>
-                                                </div>
-                                                <div class="bg-light p-3 rounded mb-3">
-                                                    <small class="text-muted d-block mb-1 fw-bold text-uppercase">Public Statement</small>
-                                                    <div class="fst-italic small">"{{ Str::limit($candidate->manifesto, 120) }}"</div>
-                                                </div>
-                                                <div class="d-flex justify-content-end gap-2">
-                                                    <form action="{{ route('admin.candidate.approve', $candidate->id) }}" method="POST">
-                                                        @csrf
-                                                        <button class="btn btn-success btn-sm px-3 fw-bold">Approve</button>
-                                                    </form>
-                                                    <form action="{{ route('admin.candidate.reject', $candidate->id) }}" method="POST">
-                                                        @csrf
-                                                        <button class="btn btn-outline-danger btn-sm px-3 fw-bold">Reject</button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                                @else
-                                    <div class="col-12 text-center py-5 text-muted">No pending applications discovered.</div>
-                                @endif
-                                </div>
-                            </div>
-
-                            <!-- Approved Candidates -->
-                            <div class="tab-pane fade" id="approved-candidates">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Nominee</th>
-                                                <th>Jurisdiction</th>
-                                                <th>Identifier</th>
-                                                <th class="text-end">Command</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(count($approvedCandidates) > 0)
-                                            @foreach($approvedCandidates as $candidate)
-                                                <tr>
-                                                    <td>
-                                                        <div class="fw-bold text-admin-primary" style="cursor:pointer; text-decoration:underline;" data-bs-toggle="modal" data-bs-target="#adminCandidateModal{{ $candidate->id }}">
-                                                            {{ $candidate->user->name }} <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.8rem;"></i>
-                                                        </div>
-                                                        <div class="small text-muted">{{ $candidate->user->email }}</div>
-                                                    </td>
-                                                    <td>{{ $candidate->user->panchayat->name }}</td>
-                                                    <td><code>{{ $candidate->voter_id }}</code></td>
-                                                    <td class="text-end">
-                                                        <form action="{{ route('admin.candidate.remove', $candidate->id) }}" method="POST" onsubmit="return confirm('CRITICAL: Remove this candidate nominee permanentely?')">
-                                                            @csrf
-                                                            <button class="btn btn-outline-danger btn-sm px-3 fw-bold">
-                                                                Depanel
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                            @else
-                                                <tr><td colspan="4" class="text-center py-5 text-muted">No authorized candidates found.</td></tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Election Tab -->
-            <div class="tab-pane fade" id="election" role="tabpanel">
-                <div class="row justify-content-center py-4">
-                    <div class="col-lg-7">
-                        <div class="card admin-card text-center">
-                            <div class="card-header border-0 pb-0">System Control Status</div>
-                            <div class="card-body py-5 px-lg-5">
-                                <div class="mb-5">
-                                    @if($electionConfig->is_active)
-                                        <div class="display-1 text-success mb-2"><i class="bi bi-broadcast"></i></div>
-                                        <h2 class="fw-bold text-success mb-1">ELECTION LIVE</h2>
-                                        <p class="text-muted">Broadcast in progress. Voting modules are active across all panchayats.</p>
-                                    @else
-                                        <div class="display-1 text-secondary mb-2"><i class="bi bi-slash-circle"></i></div>
-                                        <h2 class="fw-bold text-secondary mb-1">ELECTION HALTED</h2>
-                                        <p class="text-muted">Modules deactivated. No voting allowed until manual override.</p>
-                                    @endif
-                                </div>
-                                
-                                <form action="{{ route('admin.election.update') }}" method="POST" class="border-top pt-5">
-                                    @csrf
-                                    @if($electionConfig->is_active)
-                                        <button type="submit" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow">
-                                            EMERGENCY STOP ELECTION
-                                        </button>
-                                    @else
-                                        <input type="hidden" name="is_active" value="1">
-                                        <button type="submit" class="btn btn-admin-primary btn-lg px-5 py-3 fw-bold shadow mb-4">
-                                            COMMENCE ELECTION PHASE
-                                        </button>
-                                        <div class="pt-2">
-                                            <a href="{{ route('results') }}" class="text-decoration-none fw-bold text-primary">
-                                                <i class="bi bi-graph-up-arrow me-1"></i> Audit Real-time Statistics
-                                            </a>
-                                        </div>
-                                    @endif
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+            <ul class="nav segmented-control" id="adminTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#candidates" type="button">Candidates ({{ $pendingCandidates->count() }})</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#blos" type="button">Officers</button>
+                </li>
+            </ul>
         </div>
-    </div>
+
+        <div class="tab-content p-4 pt-3">
+            <div class="tab-pane fade show active" id="candidates" role="tabpanel">
+                <div class="table-shell">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Candidate</th>
+                                    <th>Panchayat</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($combinedCandidates as $candidate)
+                                    <tr>
+                                        <td data-label="Candidate">
+                                            <button
+                                                type="button"
+                                                class="btn p-0 border-0 bg-transparent text-start d-flex align-items-center gap-3"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#candidateDetailsModal"
+                                                data-name="{{ $candidate->user->name }}"
+                                                data-email="{{ $candidate->user->email }}"
+                                                data-panchayat="{{ $candidate->user->panchayat->name }}"
+                                                data-status="{{ ucfirst($candidate->status) }}"
+                                                data-gender="{{ $candidate->gender }}"
+                                                data-qualification="{{ $candidate->qualification }}"
+                                                data-manifesto="{{ $candidate->manifesto }}"
+                                                data-photo="{{ $candidate->photo ? Storage::url($candidate->photo) : '' }}"
+                                            >
+                                                <span class="avatar avatar--sm">
+                                                    @if($candidate->photo)
+                                                        <img src="{{ Storage::url($candidate->photo) }}" alt="{{ $candidate->user->name }}" width="44" height="44" loading="lazy">
+                                                    @else
+                                                        {{ strtoupper(substr($candidate->user->name, 0, 1)) }}
+                                                    @endif
+                                                </span>
+                                                <span>
+                                                    <strong class="d-block text-dark">{{ $candidate->user->name }}</strong>
+                                                    <span class="helper-copy">{{ $candidate->user->email }}</span>
+                                                </span>
+                                            </button>
+                                        </td>
+                                        <td data-label="Panchayat">
+                                            <span class="info-chip">{{ $candidate->user->panchayat->name }}</span>
+                                        </td>
+                                        <td data-label="Status">
+                                            <span class="status-pill {{ $candidate->status === 'approved' ? 'status-pill--success' : 'status-pill--warning' }}">
+                                                {{ ucfirst($candidate->status) }}
+                                            </span>
+                                        </td>
+                                        <td data-label="Action" class="text-end">
+                                            @if($candidate->status === 'pending')
+                                                <form action="{{ route('admin.candidate.approve', $candidate->id) }}" method="POST" class="d-inline prevent-double" data-pending-text="Approving...">
+                                                    @csrf
+                                                    <button class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check2-circle"></i>
+                                                        Approve
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('admin.candidate.remove', $candidate->id) }}" method="POST" class="d-inline prevent-double" data-pending-text="Removing...">
+                                                    @csrf
+                                                    <button class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-person-dash"></i>
+                                                        Depanel
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">No candidates exist in the system.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="blos" role="tabpanel">
+                <div class="table-shell">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Officer</th>
+                                    <th>Jurisdiction</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($blos as $blo)
+                                    <tr>
+                                        <td data-label="Officer">
+                                            <strong class="d-block">{{ $blo->user->name }}</strong>
+                                            <span class="helper-copy">{{ $blo->user->email }}</span>
+                                        </td>
+                                        <td data-label="Jurisdiction">
+                                            <span class="info-chip">{{ $blo->user->panchayat->name ?? 'Unassigned' }}</span>
+                                        </td>
+                                        <td data-label="Status">
+                                            <span class="status-pill {{ $blo->is_active ? 'status-pill--success' : 'status-pill--danger' }}">
+                                                {{ $blo->is_active ? 'Active' : 'Suspended' }}
+                                            </span>
+                                        </td>
+                                        <td data-label="Action" class="text-end">
+                                            <form action="{{ route('admin.blo.toggle', $blo->id) }}" method="POST" class="d-inline prevent-double" data-pending-text="Updating...">
+                                                @csrf
+                                                <button class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                    Toggle
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">No officers found yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
-<!-- Candidate Details Modals -->
-@foreach($pendingCandidates->merge($approvedCandidates) as $modalCandidate)
-<div class="modal fade" id="adminCandidateModal{{ $modalCandidate->id }}" tabindex="-1" aria-labelledby="adminCandidateModalLabel{{ $modalCandidate->id }}" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow-lg border-0 rounded-4">
-            <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--admin-blue-dark), var(--admin-blue-main));">
-                <h5 class="modal-title fw-bold" id="adminCandidateModalLabel{{ $modalCandidate->id }}">
-                    <i class="bi bi-person-lines-fill me-2"></i>Candidate Profile Details
-                </h5>
+<div class="modal fade" id="candidateDetailsModal" tabindex="-1" aria-labelledby="candidateDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="candidateDetailsModalLabel">Candidate details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 bg-light">
-                <div class="row align-items-center mb-4 text-center text-md-start bg-white p-3 rounded shadow-sm border">
-                    <div class="col-md-3 mb-3 mb-md-0 d-flex justify-content-center">
-                        @if($modalCandidate->photo)
-                            <img src="{{ Storage::url($modalCandidate->photo) }}" class="rounded shadow border border-3 border-white" width="120" height="150" style="object-fit:cover;" alt="Candidate Photo">
-                        @else
-                            <div class="rounded shadow d-flex align-items-center justify-content-center bg-secondary text-white" style="width:120px; height:150px;">No Photo</div>
-                        @endif
-                    </div>
-                    <div class="col-md-9">
-                        <h3 class="fw-bold text-dark mb-1">{{ $modalCandidate->user->name }}</h3>
-                        <p class="text-muted mb-2"><i class="bi bi-envelope-fill me-1"></i> {{ $modalCandidate->user->email }}</p>
-                        <span class="badge {{ $modalCandidate->status == 'approved' ? 'badge-admin-success' : 'badge-admin-danger' }} px-3 py-2 rounded-pill shadow-sm">
-                            Status: {{ ucfirst($modalCandidate->status) }}
-                        </span>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="avatar avatar--md" id="candidateModalAvatar">?</span>
+                    <div>
+                        <strong class="d-block fs-5" id="candidateModalName"></strong>
+                        <span class="helper-copy" id="candidateModalEmail"></span>
                     </div>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="bg-white p-3 rounded shadow-sm border h-100">
-                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-info-square me-2"></i>Personal Information</h6>
-                            <ul class="list-unstyled mb-0 small">
-                                <li class="mb-2"><strong>DOB:</strong> {{ $modalCandidate->dob }}</li>
-                                <li class="mb-2"><strong>Gender:</strong> {{ $modalCandidate->gender }}</li>
-                                <li class="mb-2"><strong>Mobile:</strong> {{ $modalCandidate->mobile }}</li>
-                                <li class=""><strong>Qualification:</strong> {{ $modalCandidate->qualification }}</li>
-                            </ul>
+                <div class="d-grid gap-3">
+                    <div class="candidate-list__item">
+                        <div>
+                            <div class="muted-label mb-1">Panchayat</div>
+                            <div id="candidateModalPanchayat"></div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="bg-white p-3 rounded shadow-sm border h-100">
-                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-card-checklist me-2"></i>Identity & Eligibility</h6>
-                            <ul class="list-unstyled mb-0 small">
-                                <li class="mb-2"><strong>Voter ID:</strong> <span class="text-dark fw-semibold">{{ $modalCandidate->voter_id }}</span></li>
-                                <li class="mb-2"><strong>Aadhaar:</strong> {{ $modalCandidate->aadhaar }}</li>
-                                <li class="mb-2"><strong>Panchayat:</strong> {{ $modalCandidate->user->panchayat->name ?? 'N/A' }}</li>
-                                <li class="text-truncate" title="{{ $modalCandidate->address }}"><strong>Address:</strong> {{ $modalCandidate->address }}</li>
-                            </ul>
+                    <div class="candidate-list__item">
+                        <div>
+                            <div class="muted-label mb-1">Status</div>
+                            <div id="candidateModalStatus"></div>
                         </div>
                     </div>
-                    <div class="col-12">
-                        <div class="bg-white p-3 rounded shadow-sm border">
-                            <h6 class="fw-bold text-primary mb-2"><i class="bi bi-megaphone-fill me-2"></i>Manifesto / Vision</h6>
-                            <p class="small text-muted mb-0 fst-italic border-start border-3 border-primary ps-3 bg-light p-2 rounded">
-                                "{{ $modalCandidate->manifesto }}"
-                            </p>
+                    <div class="candidate-list__item">
+                        <div>
+                            <div class="muted-label mb-1">Profile snapshot</div>
+                            <div id="candidateModalProfile"></div>
+                        </div>
+                    </div>
+                    <div class="candidate-list__item">
+                        <div>
+                            <div class="muted-label mb-1">Manifesto</div>
+                            <p class="mb-0" id="candidateModalManifesto"></p>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer bg-white">
-                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-@endforeach
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('candidateDetailsModal');
+
+        if (!modal) {
+            return;
+        }
+
+        modal.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const photo = trigger.getAttribute('data-photo');
+            const name = trigger.getAttribute('data-name');
+            const email = trigger.getAttribute('data-email');
+            const panchayat = trigger.getAttribute('data-panchayat');
+            const status = trigger.getAttribute('data-status');
+            const gender = trigger.getAttribute('data-gender');
+            const qualification = trigger.getAttribute('data-qualification');
+            const manifesto = trigger.getAttribute('data-manifesto');
+
+            const avatar = document.getElementById('candidateModalAvatar');
+            const statusClass = status === 'Approved' ? 'status-pill status-pill--success' : 'status-pill status-pill--warning';
+
+            document.getElementById('candidateModalName').textContent = name;
+            document.getElementById('candidateModalEmail').textContent = email;
+            document.getElementById('candidateModalPanchayat').textContent = panchayat;
+            document.getElementById('candidateModalStatus').innerHTML = `<span class="${statusClass}">${status}</span>`;
+            document.getElementById('candidateModalProfile').textContent = `${gender || 'Not set'} | ${qualification || 'Qualification not set'}`;
+            document.getElementById('candidateModalManifesto').textContent = manifesto || 'No manifesto submitted.';
+
+            if (photo) {
+                avatar.innerHTML = `<img src="${photo}" alt="${name}" width="58" height="58">`;
+            } else {
+                avatar.textContent = name.charAt(0).toUpperCase();
+            }
+        });
+    });
+</script>
+@endpush
 @endsection

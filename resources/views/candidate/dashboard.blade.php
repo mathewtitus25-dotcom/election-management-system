@@ -1,155 +1,132 @@
 @extends('layouts.app')
 
+@section('page_title', 'Campaign')
+@section('page_subtitle', 'Track turnout, opponents, and voters.')
+
 @section('content')
-<div class="row mb-5">
-    <div class="col-md-12">
-        <div class="card border-0 shadow-sm bg-white">
-            <div class="card-body p-4 d-flex justify-content-between align-items-center">
+<div class="page-shell">
+    <x-ui.page-header eyebrow="Campaign Workspace" title="Candidate dashboard" subtitle="Your key campaign numbers and lists.">
+        <span class="info-chip">
+            <i class="bi bi-geo-alt"></i>
+            {{ $panchayat->name }}
+        </span>
+        <span class="status-pill status-pill--success">
+            <i class="bi bi-patch-check"></i>
+            Approved candidate
+        </span>
+    </x-ui.page-header>
+
+    <section class="stat-grid">
+        <x-ui.stat-card label="Verified Voters" value="{{ $totalVoters }}" icon="bi-people" meta="Approved residents in your panchayat." />
+        <x-ui.stat-card label="Votes Cast" value="{{ $votedCount }}" icon="bi-check2-square" tone="accent" meta="Current turnout count across the panchayat." />
+        <x-ui.stat-card label="Turnout" value="{{ $turnoutPercent }}%" icon="bi-graph-up-arrow" tone="success" meta="Your live turnout benchmark.">
+            <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $turnoutPercent }}%"></div>
+            </div>
+        </x-ui.stat-card>
+    </section>
+
+    <div class="split-grid">
+        <section class="surface-card surface-card--padded content-auto" data-reveal>
+            <div class="muted-label">Manifesto</div>
+            <h2 class="mb-2">What voters will read about you</h2>
+            <p class="helper-copy">Your campaign message.</p>
+            <div class="candidate-list mt-4">
+                <div class="candidate-list__item align-items-start">
+                    <span class="icon-badge"><i class="bi bi-file-earmark-text"></i></span>
+                    <div>
+                        <p class="mb-2 fst-italic">"{{ $candidate->manifesto }}"</p>
+                        <span class="helper-copy">Applied on {{ $candidate->created_at->format('M d, Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="surface-card surface-card--padded content-auto" data-reveal data-reveal-delay="80">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
                 <div>
-                    <h2 class="fw-bold mb-1">Candidate Dashboard</h2>
-                    <p class="text-muted mb-0">Running for Office: <span class="fw-bold text-primary">{{ $panchayat->name }}</span></p>
+                    <div class="muted-label">Opponents</div>
+                    <h2 class="mb-1">Other approved candidates</h2>
                 </div>
-                <div class="text-end d-flex align-items-center gap-2">
-                    <!-- Removed Switch to Voter View button as requested -->
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success p-2">
-                        <i class="bi bi-patch-check-fill me-1"></i>Approved Candidate
-                    </span>
-                </div>
+                <span class="status-pill status-pill--primary">
+                    <i class="bi bi-people-fill"></i>
+                    {{ $opponents->count() }} opponent{{ $opponents->count() === 1 ? '' : 's' }}
+                </span>
             </div>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4 mb-5">
-    <!-- Turnout Stats -->
-    <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm text-center p-4">
-            <h6 class="text-muted text-uppercase small ls-1 mb-3">Total Panchayat Voters</h6>
-            <h2 class="display-5 fw-bold text-dark mb-0">{{ $totalVoters }}</h2>
-            <div class="mt-2 small text-muted">Verified residents</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm text-center p-4">
-            <h6 class="text-muted text-uppercase small ls-1 mb-3">Votes Cast So Far</h6>
-            <h2 class="display-5 fw-bold text-primary mb-0">{{ $votedCount }}</h2>
-            <div class="mt-2 small text-muted">Live turnout progress</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm text-center p-4">
-            <h6 class="text-muted text-uppercase small ls-1 mb-3">Turnout Percentage</h6>
-            <h2 class="display-5 fw-bold text-success mb-0">{{ $turnoutPercent }}%</h2>
-            <div class="mt-2">
-                <div class="progress" style="height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ $turnoutPercent }}%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Manifesto Preview -->
-    <div class="col-md-5 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold py-3">
-                <i class="bi bi-file-text-fill text-primary me-2"></i>My Manifesto
-            </div>
-            <div class="card-body">
-                <p class="text-muted fst-italic">"{{ $candidate->manifesto }}"</p>
-                <hr>
-                <div class="small">
-                    <strong>Status:</strong> Approved by Admin<br>
-                    <strong>Applied on:</strong> {{ $candidate->created_at->format('M d, Y') }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Opponents Section -->
-    <div class="col-md-7 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-people-fill text-primary me-2"></i>My Opponents</span>
-                <span class="badge bg-light text-dark border">{{ $opponents->count() }} Competitors</span>
-            </div>
-            <div class="card-body p-0">
-                @if($opponents->count() > 0)
-                    <div class="list-group list-group-flush">
-                        @foreach($opponents as $opponent)
-                            <div class="list-group-item p-4">
-                                <div class="d-flex align-items-center mb-2">
-                                    @if($opponent->photo)
-                                        <div class="rounded-circle me-3 overflow-hidden shadow-sm" style="width: 40px; height: 40px;">
-                                            <img src="{{ Storage::url($opponent->photo) }}" alt="Opponent Photo" style="width: 100%; height: 100%; object-fit: cover;">
-                                        </div>
-                                    @else
-                                        <div class="bg-light rounded-circle p-2 me-3 text-secondary" style="width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
-                                            <i class="bi bi-person-fill"></i>
-                                        </div>
-                                    @endif
-                                    <h6 class="mb-0 fw-bold">{{ $opponent->user->name }}</h6>
-                                </div>
-                                <div class="small text-muted ps-5">
-                                    "{{ Str::limit($opponent->manifesto, 150) }}"
-                                </div>
+            @if($opponents->count() > 0)
+                <div class="candidate-list">
+                    @foreach($opponents as $opponent)
+                        <div class="candidate-list__item">
+                            <span class="avatar avatar--sm">
+                                @if($opponent->photo)
+                                    <img src="{{ Storage::url($opponent->photo) }}" alt="{{ $opponent->user->name }}" width="44" height="44" loading="lazy">
+                                @else
+                                    {{ strtoupper(substr($opponent->user->name, 0, 1)) }}
+                                @endif
+                            </span>
+                            <div>
+                                <strong class="d-block">{{ $opponent->user->name }}</strong>
+                                <span class="helper-copy">"{{ Str::limit($opponent->manifesto, 150) }}"</span>
                             </div>
-                        @endforeach
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="status-banner">
+                    <i class="bi bi-award text-muted"></i>
+                    <div>
+                        <strong class="d-block mb-1">No approved opponents yet</strong>
+                        <span class="helper-copy">You are currently the only approved candidate in this panchayat.</span>
                     </div>
-                @else
-                    <div class="text-center py-5">
-                        <i class="bi bi-award fs-1 text-muted opacity-25 d-block mb-3"></i>
-                        <p class="text-muted">You are the only approved candidate in this Panchayat so far.</p>
-                    </div>
-                @endif
-            </div>
-        </div>
+                </div>
+            @endif
+        </section>
     </div>
-</div>
 
-<div class="row">
-    <!-- Voter List Section -->
-    <div class="col-12 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-people-fill text-primary me-2"></i>Panchayat Voter List</span>
-                <span class="badge bg-light text-dark border">{{ $votersList->count() }} Total Voters</span>
+    <section class="surface-card content-auto" data-reveal>
+        <div class="panel-card__header">
+            <div>
+                <h2 class="panel-card__title">Panchayat voter list</h2>
+                <p class="panel-card__subtitle">Approved voters in your panchayat.</p>
             </div>
-            <div class="card-body p-0">
+            <span class="info-chip">
+                <i class="bi bi-person-lines-fill"></i>
+                {{ $votersList->count() }} total voter{{ $votersList->count() === 1 ? '' : 's' }}
+            </span>
+        </div>
+
+        <div class="p-4 pt-3">
+            <div class="table-shell">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                    <table class="table align-middle">
+                        <thead>
                             <tr>
-                                <th class="ps-4">Voter Name</th>
-                                <th class="pe-4">Email</th>
+                                <th>Voter</th>
+                                <th>Email</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @if(count($votersList) > 0)
-                            @foreach($votersList as $voter)
+                            @forelse($votersList as $voter)
                                 <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-light rounded-circle p-2 me-3 text-secondary" style="width: 35px; height: 35px; display:flex; align-items:center; justify-content:center; font-size: 0.8rem;">
-                                                <i class="bi bi-person-fill"></i>
-                                            </div>
-                                            <span class="fw-bold">{{ $voter->user->name }}</span>
+                                    <td data-label="Voter">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="avatar avatar--sm">{{ strtoupper(substr($voter->user->name, 0, 1)) }}</span>
+                                            <strong>{{ $voter->user->name }}</strong>
                                         </div>
                                     </td>
-                                    <td class="pe-4">{{ $voter->user->email }}</td>
+                                    <td data-label="Email">{{ $voter->user->email }}</td>
                                 </tr>
-                            @endforeach
-                            @else
+                            @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">No approved voters found in this Panchayat.</td>
+                                    <td colspan="2" class="text-center py-5 text-muted">No approved voters found in this panchayat.</td>
                                 </tr>
-                            @endif
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 @endsection

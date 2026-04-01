@@ -1,238 +1,219 @@
+@php
+    $appName = config('app.name', 'VoteDesk');
+    $user = Auth::user();
+    $pageTitle = trim($__env->yieldContent('page_title')) ?: $appName;
+    $pageSubtitle = trim($__env->yieldContent('page_subtitle')) ?: 'Secure election operations with calmer flows, clearer decisions, and reliable public reporting.';
+
+    $dashboardItem = null;
+
+    if ($user) {
+        $dashboardItem = match ($user->role) {
+            'admin' => ['label' => 'Admin Dashboard', 'href' => route('admin.dashboard'), 'icon' => 'bi-speedometer2', 'hint' => 'Control center', 'active' => request()->routeIs('admin.dashboard')],
+            'blo' => ['label' => 'Officer Dashboard', 'href' => route('blo.dashboard'), 'icon' => 'bi-shield-check', 'hint' => 'Approvals and results', 'active' => request()->routeIs('blo.dashboard')],
+            'candidate' => ['label' => 'Candidate Dashboard', 'href' => route('candidate.dashboard'), 'icon' => 'bi-megaphone', 'hint' => 'Campaign snapshot', 'active' => request()->routeIs('candidate.dashboard')],
+            'voter' => ['label' => 'Voting Booth', 'href' => route('voter.dashboard'), 'icon' => 'bi-check2-square', 'hint' => 'Ballot and verification', 'active' => request()->routeIs('voter.dashboard')],
+            default => null,
+        };
+    }
+
+    $primaryNavigation = [
+        ['label' => 'Home', 'href' => route('welcome'), 'icon' => 'bi-house-door', 'hint' => 'Overview', 'active' => request()->routeIs('welcome')],
+    ];
+
+    if ($dashboardItem) {
+        $primaryNavigation[] = $dashboardItem;
+    }
+
+    $primaryNavigation[] = [
+        'label' => 'Election Results',
+        'href' => $user ? route('results') : route('login'),
+        'icon' => 'bi-bar-chart-line',
+        'hint' => $user ? 'Live and certified counts' : 'Sign in to view',
+        'active' => request()->routeIs('results'),
+    ];
+
+    $secondaryNavigation = [];
+
+    if (! $user) {
+        $secondaryNavigation[] = ['label' => 'Login', 'href' => route('login'), 'icon' => 'bi-box-arrow-in-right', 'hint' => 'Role-based access', 'active' => request()->routeIs('login')];
+        $secondaryNavigation[] = ['label' => 'Register', 'href' => route('register'), 'icon' => 'bi-person-plus', 'hint' => 'Voter onboarding', 'active' => request()->routeIs('register')];
+        $secondaryNavigation[] = ['label' => 'Candidate Apply', 'href' => route('candidate.register'), 'icon' => 'bi-person-badge', 'hint' => 'Nomination form', 'active' => request()->routeIs('candidate.register')];
+    } elseif ($user->role === 'admin') {
+        $secondaryNavigation[] = ['label' => 'Verification Logs', 'href' => route('admin.voters.index'), 'icon' => 'bi-list-columns-reverse', 'hint' => 'Audit captured activity', 'active' => request()->routeIs('admin.voters.index')];
+    }
+
+    $hasViteAssets = file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot'));
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoteDesk</title>
-    <!-- Bootstrap 5 CSS -->
+    <meta name="theme-color" content="#10233d">
+    <title>{{ $pageTitle }} | {{ $appName }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-        
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #e0f2fe 0%, #eef2ff 50%, #f5f3ff 100%);
-        }
-
-        .card {
-            border: none;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .navbar {
-            backdrop-filter: blur(8px);
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .nav-link {
-            font-weight: 500;
-            color: #4b5563 !important;
-        }
-
-        .nav-link:hover {
-            color: #0d6efd !important;
-        }
-
-        .btn-primary {
-            background-color: #4f46e5;
-            border-color: #4f46e5;
-        }
-
-        .btn-primary:hover {
-            background-color: #4338ca;
-            border-color: #4a90e2;
-        }
-        .btn-custom{
-            background-color:#4a90e2;
-            border-color:#4a90e2;
-            color:#fff;
-        }
-
-        /* When mouse cursor is ON button */
-        .btn-custom:hover{
-            background-color:#3f7fc4;   /* slightly darker */
-            border-color:#3f7fc4;
-            color:#fff;
-        }
-
-        /* Optional: when clicking */
-        .btn-custom:active{
-            background-color:#366fae;
-            border-color:#366fae;
-        }
-
-        .hero-section {
-            padding: 4rem 0;
-        }
-
-        .feature-icon {
-            width: 3rem;
-            height: 3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.75rem;
-            margin-bottom: 1rem;
-        }
-        
-        .step-circle {
-            width: 3rem;
-            height: 3rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.25rem;
-            margin: 0 auto 1rem;
-        }
-
-        /* Capitalize first letter of each word */
-        .capitalize-input {
-            text-transform: capitalize;
-        }
-    </style>
+    @if($hasViteAssets)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <style>{!! file_get_contents(resource_path('css/app.css')) !!}</style>
+        <script defer>{!! file_get_contents(resource_path('js/app.js')) !!}</script>
+    @endif
+    @stack('styles')
 </head>
-<body class="bg-gradient-primary min-vh-100 d-flex flex-column">
+<body class="@yield('body_class')">
+    <a href="#app-content" class="skip-link">Skip to content</a>
 
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <img src="{{ asset('images/logo.png') }}" alt="VoteDesk Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;">
-                <div class="d-flex flex-column">
-                    <span class="fw-bold lh-1 text-dark">VoteDesk</span>
+    <div class="app-shell">
+        <div class="app-overlay" data-sidebar-overlay></div>
+
+        <aside id="app-sidebar" class="app-sidebar" aria-label="Primary navigation">
+            <div class="app-sidebar__header">
+                <div class="app-sidebar__brand">
+                    <img src="{{ asset('images/logo.png') }}" alt="{{ $appName }} logo" width="34" height="34">
                 </div>
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    @auth
-                        <li class="nav-item">
-                            <span class="nav-link">
-                                <i class="bi bi-person-circle me-1"></i> {{ Auth::user()->name }} 
-                                <span class="badge bg-secondary ms-1">{{ ucfirst(Auth::user()->role) }}</span>
-                            </span>
-                        </li>
-                        <li class="nav-item ms-2">
-                             @if(Auth::user()->role == 'admin')
-                                <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-primary">Dashboard</a>
-                             @elseif(Auth::user()->role == 'blo')
-                                <a href="{{ route('blo.dashboard') }}" class="btn btn-sm btn-outline-primary">Dashboard</a>
-                             @elseif(Auth::user()->role == 'candidate')
-                                <a href="{{ route('candidate.dashboard') }}" class="btn btn-sm btn-outline-primary">Dashboard</a>
-                             @elseif(Auth::user()->role == 'voter')
-                                <a href="{{ route('voter.dashboard') }}" class="btn btn-sm btn-outline-primary">Dashboard</a>
-                             @endif
-                        </li>
-                        <li class="nav-item ms-2">
-                            <a href="{{ route('results') }}" class="btn btn-sm btn-outline-success">
-                                <i class="bi bi-bar-chart-fill me-1"></i> Results
-                            </a>
-                        </li>
-
-                        <li class="nav-item ms-2">
-                            <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </button>
-                            </form>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="btn btn-primary ms-2" href="{{ route('register') }}">
-                                <i class="bi bi-person-plus"></i> Register
-                            </a>
-                        </li>
-                    @endauth
-                </ul>
+                <div>
+                    <h1 class="app-sidebar__title">{{ $appName }}</h1>
+                    <span class="app-sidebar__subtitle">Digital election operations</span>
+                </div>
             </div>
-        </div>
-    </nav>
 
-    <div class="container py-4 flex-grow-1">
+            @auth
+                <section class="app-sidebar__profile">
+                    <span class="app-sidebar__eyebrow">Signed In</span>
+                    <div class="app-sidebar__profile-name">{{ $user->name }}</div>
+                    <div class="app-sidebar__profile-meta">{{ ucfirst($user->role) }} workspace</div>
+                </section>
+            @endauth
+
+            <nav class="app-sidebar__nav">
+                <div class="app-sidebar__group">
+                    <div class="app-sidebar__group-title">Primary</div>
+                    @foreach($primaryNavigation as $item)
+                        <a href="{{ $item['href'] }}" class="app-sidebar__link {{ $item['active'] ? 'is-active' : '' }}" @if($item['active']) aria-current="page" @endif>
+                            <i class="bi {{ $item['icon'] }}"></i>
+                            <span>
+                                <span class="d-block fw-semibold">{{ $item['label'] }}</span>
+                                <small>{{ $item['hint'] }}</small>
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
+
+                @if(count($secondaryNavigation))
+                    <div class="app-sidebar__group">
+                        <div class="app-sidebar__group-title">Quick Access</div>
+                        @foreach($secondaryNavigation as $item)
+                            <a href="{{ $item['href'] }}" class="app-sidebar__link {{ $item['active'] ? 'is-active' : '' }}" @if($item['active']) aria-current="page" @endif>
+                                <i class="bi {{ $item['icon'] }}"></i>
+                                <span>
+                                    <span class="d-block fw-semibold">{{ $item['label'] }}</span>
+                                    <small>{{ $item['hint'] }}</small>
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            </nav>
+
+            <div class="app-sidebar__footer">
+                <span class="app-sidebar__subtitle">Built for clarity, verification, and trust.</span>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <button type="button" class="app-topbar__toggle" data-sidebar-toggle aria-controls="app-sidebar" aria-label="Toggle navigation">
+                    <i class="bi bi-list"></i>
+                </button>
+
+                <div class="app-topbar__meta">
+                    <h2 class="app-topbar__title">{{ $pageTitle }}</h2>
+                </div>
+
+                <div class="app-topbar__actions">
+                    @auth
+                        <span class="status-pill status-pill--primary">
+                            <i class="bi bi-person-badge"></i>
+                            {{ ucfirst($user->role) }}
+                        </span>
+                        <form action="{{ route('logout') }}" method="POST" class="prevent-double" data-pending-text="Signing out...">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-box-arrow-right"></i>
+                                Logout
+                            </button>
+                        </form>
+                    @else
+                        @if(! request()->routeIs('login'))
+                            <a href="{{ route('login') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Login
+                            </a>
+                        @endif
+                        @if(! request()->routeIs('register'))
+                            <a href="{{ route('register') }}" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i>
+                                Register
+                            </a>
+                        @endif
+                    @endauth
+                </div>
+            </header>
+
+            <main id="app-content" class="app-content">
+                @yield('content')
+            </main>
+
+            <footer class="app-footer">
+                <small>&copy; {{ date('Y') }} {{ $appName }}. Designed for transparent, role-aware election management.</small>
+            </footer>
+        </div>
+    </div>
+
+    <div class="app-toast-stack" aria-live="polite" aria-atomic="true">
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="app-toast app-toast--success" data-toast data-timeout="4200">
+                <span class="app-toast__icon"><i class="bi bi-check2-circle"></i></span>
+                <div>{{ session('success') }}</div>
+                <button type="button" class="app-toast__close" data-toast-close aria-label="Dismiss message">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="app-toast app-toast--danger" data-toast data-timeout="5200">
+                <span class="app-toast__icon"><i class="bi bi-exclamation-octagon"></i></span>
+                <div>{{ session('error') }}</div>
+                <button type="button" class="app-toast__close" data-toast-close aria-label="Dismiss message">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
         @endif
 
-        @if($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <ul class="mb-0">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        @if(isset($errors) && $errors instanceof \Illuminate\Support\MessageBag && $errors->any())
+            <div class="app-toast app-toast--danger" data-toast data-timeout="6400">
+                <span class="app-toast__icon"><i class="bi bi-exclamation-triangle"></i></span>
+                <div>
+                    <strong class="d-block mb-1">Please review the highlighted fields.</strong>
+                    <ul class="mb-0 ps-3">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <button type="button" class="app-toast__close" data-toast-close aria-label="Dismiss validation message">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
         @endif
-
-        @yield('content')
     </div>
 
-    <footer class="bg-white border-top py-4 mt-auto">
-        <div class="container text-center text-muted">
-            <p class="mb-0">&copy; {{ date('Y') }} VoteDesk. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Capitalize first letter of each word in inputs with .capitalize-input class
-        document.addEventListener('input', function (e) {
-            if (e.target.classList.contains('capitalize-input')) {
-                let cursorPosition = e.target.selectionStart;
-                let value = e.target.value;
-                
-                // Capitalize first letter of each word
-                let words = value.split(' ');
-                for (let i = 0; i < words.length; i++) {
-                    if (words[i].length > 0) {
-                        words[i] = words[i][0].toUpperCase() + words[i].substr(1);
-                    }
-                }
-                
-                let newValue = words.join(' ');
-                if (value !== newValue) {
-                    e.target.value = newValue;
-                    // Restore cursor position
-                    e.target.setSelectionRange(cursorPosition, cursorPosition);
-                }
-            }
-        });
-    </script>
-
     @stack('scripts')
 </body>
 </html>

@@ -1,221 +1,220 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="row mb-5">
-    <div class="col-md-12">
-        <div class="card bg-white shadow-sm border-0">
-            <div class="card-body p-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="fw-bold mb-0">Officer Dashboard</h2>
-                    <p class="text-muted mb-0">Panchayat: <span class="fw-bold text-primary">{{ $panchayat->name }}</span></p>
-                </div>
-                <div class="text-end">
-                    <span class="badge bg-light text-dark border p-2 mb-1 d-block">Officer: {{ $user->name }}</span>
-                    <small class="text-muted">ID: BLO-{{ $user->id }}</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@section('page_title', 'Officer')
+@section('page_subtitle', 'Approve voters and manage result visibility.')
 
-<div class="row g-4">
-    <!-- Pending Requests Column -->
-    <div class="col-md-7">
-        <div class="card shadow h-100">
-            <div class="card-header bg-warning bg-opacity-10 text-warning-emphasis fw-bold py-3 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-hourglass-split me-2"></i>Pending Voter Approvals</span>
-                <span class="badge bg-warning text-dark">{{ $pendingVoters->count() }}</span>
+@section('content')
+<div class="page-shell">
+    <x-ui.page-header eyebrow="Booth Level Operations" title="Officer dashboard" subtitle="Pending approvals first, result controls second.">
+        <span class="info-chip">
+            <i class="bi bi-geo-alt"></i>
+            {{ $panchayat->name }}
+        </span>
+        <span class="status-pill {{ $isElectionActive ? 'status-pill--primary' : 'status-pill--warning' }}">
+            <i class="bi {{ $isElectionActive ? 'bi-broadcast-pin' : 'bi-pause-circle' }}"></i>
+            {{ $isElectionActive ? 'Election live' : 'Election paused' }}
+        </span>
+    </x-ui.page-header>
+
+    <section class="stat-grid">
+        <x-ui.stat-card label="Pending Approvals" value="{{ $pendingVoters->count() }}" icon="bi-hourglass-split" tone="warning" meta="Applicants awaiting BLO review in your panchayat." />
+        <x-ui.stat-card label="Verified Voters" value="{{ $approvedVoters->count() }}" icon="bi-check2-circle" tone="success" meta="Approved voters currently ready to participate." />
+        <x-ui.stat-card label="Officer ID" value="BLO-{{ $user->id }}" icon="bi-person-badge" meta="Current operator workspace for {{ $user->name }}." />
+    </section>
+
+    <div class="split-grid">
+        <section class="surface-card content-auto" data-reveal>
+            <div class="panel-card__header">
+                <div>
+                    <h2 class="panel-card__title">Pending voter approvals</h2>
+                    <p class="panel-card__subtitle">Approve or reject pending requests.</p>
+                </div>
+                <span class="status-pill status-pill--warning">
+                    <i class="bi bi-person-lines-fill"></i>
+                    {{ $pendingVoters->count() }} waiting
+                </span>
             </div>
-            <div class="card-body p-0">
-                @if($pendingVoters->count() > 0)
+
+            <div class="p-4 pt-3">
+                <div class="table-shell">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="bg-light">
+                        <table class="table align-middle">
+                            <thead>
                                 <tr>
-                                    <th class="ps-4">Applicant Details</th>
-                                    <th>Actions</th>
+                                    <th>Applicant</th>
+                                    <th>Credentials</th>
+                                    <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($pendingVoters as $voter)
+                                @forelse($pendingVoters as $voter)
                                     <tr>
-                                        <td class="ps-4">
-                                            <div class="fw-bold">{{ $voter->user->name }}</div>
-                                            <div class="small text-muted mb-1">{{ $voter->user->email }}</div>
-                                            <div class="d-flex gap-2">
-                                                <span class="badge bg-light text-dark border">ID: {{ $voter->voter_id_number }}</span>
-                                                <span class="badge bg-light text-dark border">DOB: {{ $voter->dob }}</span>
+                                        <td data-label="Applicant">
+                                            <strong class="d-block">{{ $voter->user->name }}</strong>
+                                            <span class="helper-copy">{{ $voter->user->email }}</span>
+                                        </td>
+                                        <td data-label="Credentials">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="info-chip">ID: {{ $voter->voter_id_number }}</span>
+                                                <span class="info-chip">DOB: {{ $voter->dob }}</span>
                                             </div>
                                         </td>
-                                        <td style="width: 150px;">
-                                            <div class="d-flex gap-2">
-                                                <form action="{{ route('blo.approve', $voter->id) }}" method="POST">
+                                        <td data-label="Actions" class="text-end">
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <form action="{{ route('blo.approve', $voter->id) }}" method="POST" class="prevent-double" data-pending-text="Approving...">
                                                     @csrf
-                                                    <button class="btn btn-success btn-sm" title="Approve">
+                                                    <button class="btn btn-success btn-sm">
                                                         <i class="bi bi-check-lg"></i>
+                                                        Approve
                                                     </button>
                                                 </form>
-                                                <form action="{{ route('blo.reject', $voter->id) }}" method="POST">
+                                                <form action="{{ route('blo.reject', $voter->id) }}" method="POST" class="prevent-double" data-pending-text="Rejecting...">
                                                     @csrf
-                                                    <button class="btn btn-outline-danger btn-sm" title="Reject">
+                                                    <button class="btn btn-light btn-sm">
                                                         <i class="bi bi-x-lg"></i>
+                                                        Reject
                                                     </button>
                                                 </form>
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center py-5 text-muted">No pending approvals right now.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
-                @else
-                    <div class="text-center py-5">
-                        <i class="bi bi-clipboard-check fs-1 text-muted opacity-50 mb-2"></i>
-                        <p class="text-muted">No pending approvals needed.</p>
-                    </div>
-                @endif
+                </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- Stats and Approved List -->
-    <div class="col-md-5">
-        <div class="card shadow mb-4">
-            <div class="card-body text-center py-4">
-                <h6 class="text-muted text-uppercase small letter-spacing-1">Total Verified Voters</h6>
-                <h1 class="display-4 fw-bold text-success mb-0">{{ $approvedVoters->count() }}</h1>
+        <section class="surface-card content-auto" data-reveal data-reveal-delay="80">
+            <div class="panel-card__header">
+                <div>
+                    <h2 class="panel-card__title">Verified voters</h2>
+                    <p class="panel-card__subtitle">Open a voter record when you need more detail.</p>
+                </div>
+                <span class="status-pill status-pill--success">
+                    <i class="bi bi-people-fill"></i>
+                    {{ $approvedVoters->count() }} verified
+                </span>
             </div>
-        </div>
 
-        <div class="card shadow">
-            <div class="card-header bg-success bg-opacity-10 text-success-emphasis fw-bold py-3">
-                <i class="bi bi-people-fill me-2"></i>Verified Voters List
-            </div>
-            <div class="card-body p-0">
-                 @if($approvedVoters->count() > 0)
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm table-hover mb-0 align-middle">
-                            <thead class="bg-light sticky-top">
+            <div class="p-4 pt-3">
+                <div class="table-shell">
+                    <div class="table-responsive table-scroll-y">
+                        <table class="table align-middle">
+                            <thead>
                                 <tr>
-                                    <th class="ps-3">Voter Details</th>
+                                    <th>Voter</th>
+                                    <th>Record</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($approvedVoters as $voter)
-                                    <tr style="cursor: pointer;" 
-                                        data-bs-toggle="modal" 
+                                @forelse($approvedVoters as $voter)
+                                    <tr
+                                        class="clickable-row"
+                                        data-bs-toggle="modal"
                                         data-bs-target="#voterDetailsModal"
                                         data-name="{{ $voter->user->name }}"
                                         data-email="{{ $voter->user->email }}"
                                         data-voterid="{{ $voter->voter_id_number }}"
                                         data-dob="{{ $voter->dob }}"
                                         data-panchayat="{{ $panchayat->name }}"
-                                        data-photo="{{ $voter->captured_photo ? Storage::url($voter->captured_photo) : '' }}">
-                                        <td class="ps-3">
-                                            <div class="fw-bold text-primary">{{ $voter->user->name }}</div>
-                                            <div class="small text-muted">{{ $voter->voter_id_number }}</div>
+                                        data-photo="{{ $voter->captured_photo ? Storage::url($voter->captured_photo) : '' }}"
+                                    >
+                                        <td data-label="Voter">
+                                            <strong class="d-block text-primary">{{ $voter->user->name }}</strong>
+                                            <span class="helper-copy">{{ $voter->voter_id_number }}</span>
+                                        </td>
+                                        <td data-label="Record">
+                                            <span class="status-pill status-pill--success">Approved</span>
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center py-5 text-muted">No verified voters yet.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="surface-card surface-card--padded" data-reveal>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <div class="muted-label">Result management</div>
+                <h2 class="mb-1">Panchayat result visibility</h2>
+                <p class="helper-copy mb-0">
+                    Publish only after voting ends.
+                </p>
+            </div>
+
+            <div class="cluster">
+                @if($panchayat->is_result_published)
+                    <span class="status-pill status-pill--success"><i class="bi bi-check2-circle"></i> Published</span>
+                    <form action="{{ route('blo.unpublish') }}" method="POST" class="prevent-double" data-pending-text="Unpublishing..." onsubmit="return confirm('Are you sure you want to hide the published result?');">
+                        @csrf
+                        <button class="btn btn-danger">
+                            <i class="bi bi-eye-slash"></i>
+                            Unpublish Result
+                        </button>
+                    </form>
+                @elseif($isElectionActive)
+                    <span class="status-pill status-pill--warning"><i class="bi bi-lock"></i> Wait until voting ends</span>
+                    <button class="btn btn-light" disabled>
+                        <i class="bi bi-megaphone"></i>
+                        Publish Result
+                    </button>
+                @elseif($panchayat->was_published)
+                    <span class="status-pill status-pill--primary"><i class="bi bi-arrow-repeat"></i> Cycle complete</span>
+                    <button class="btn btn-light" disabled>
+                        <i class="bi bi-check2-all"></i>
+                        Published and removed
+                    </button>
                 @else
-                    <p class="text-center text-muted py-4">No verified voters yet.</p>
+                    <span class="status-pill status-pill--primary"><i class="bi bi-eye"></i> Hidden from public</span>
+                    <form action="{{ route('blo.publish') }}" method="POST" class="prevent-double" data-pending-text="Publishing..." onsubmit="return confirm('Once published, the result becomes visible to everyone. Continue?');">
+                        @csrf
+                        <button class="btn btn-primary">
+                            <i class="bi bi-broadcast"></i>
+                            Publish Result
+                        </button>
+                    </form>
                 @endif
             </div>
         </div>
-    </div>
-    <!-- Result Management -->
-    <div class="col-12">
-        <div class="card shadow">
-            <div class="card-header bg-primary bg-opacity-10 text-primary-emphasis fw-bold py-3">
-                <i class="bi bi-megaphone-fill me-2"></i>Result Management
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h5 class="fw-bold">Panchayat Election Result Status</h5>
-                    @if($panchayat->is_result_published)
-                        <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> PUBLISHED</span>
-                        <p class="text-muted small mt-1 mb-0">Results are visible to the public.</p>
-                    @else
-                        <span class="badge bg-secondary"><i class="bi bi-eye-slash-fill me-1"></i> HIDDEN</span>
-                        <p class="text-muted small mt-1 mb-0">Results are currently hidden from the public.</p>
-                    @endif
-                </div>
-                
-                <div>
-                    @if($panchayat->is_result_published)
-                         <form action="{{ route('blo.unpublish') }}" method="POST" onsubmit="return confirm('Are you sure? This will hide the results from the public.')">
-                             @csrf
-                             <button class="btn btn-danger">
-                                  <i class="bi bi-eye-slash-fill me-1"></i> Unpublish Result
-                             </button>
-                         </form>
-                    @elseif($isElectionActive)
-                        <button class="btn btn-secondary" disabled title="Wait for election to end">
-                            <i class="bi bi-lock-fill me-1"></i> Publish Result
-                        </button>
-                        <small class="d-block text-muted mt-1 text-center">Election must end first</small>
-                    @elseif($panchayat->was_published)
-                        <button class="btn btn-secondary" disabled>
-                            <i class="bi bi-check-circle me-1"></i> Published & Removed
-                        </button>
-                        <small class="d-block text-muted mt-1 text-center">Cycle complete</small>
-                    @else
-                        <form action="{{ route('blo.publish') }}" method="POST" onsubmit="return confirm('Are you sure? Once published, results will be visible to everyone.')">
-                            @csrf
-                            <button class="btn btn-primary pulse">
-                                <i class="bi bi-broadcast me-1"></i> Publish Result
-                            </button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    </section>
 </div>
 
-<!-- Voter Details Modal -->
 <div class="modal fade" id="voterDetailsModal" tabindex="-1" aria-labelledby="voterDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold" id="voterDetailsModalLabel">Voter Complete Details</h5>
+                <h5 class="modal-title" id="voterDetailsModalLabel">Voter details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="text-center mb-4">
-                    <div id="modalVoterIconContainer" class="mb-3">
-                        <i id="modalVoterIcon" class="bi bi-person-circle text-muted" style="font-size: 5rem;"></i>
-                        <img id="modalVoterPhoto" src="" alt="Voter Photo" class="img-thumbnail rounded-circle shadow-sm" style="width: 150px; height: 150px; object-fit: cover; display: none;">
-                    </div>
-                    <h4 id="modalVoterNameDisplay" class="fw-bold mb-0"></h4>
-                    <span id="modalVoterIDDisplay" class="badge bg-light text-dark border"></span>
-                </div>
-                
-                <div class="row g-3">
-                    <div class="col-6">
-                        <label class="small text-muted text-uppercase fw-bold">Email Address</label>
-                        <div id="modalVoterEmail" class="fw-bold text-dark"></div>
-                    </div>
-                    <div class="col-6">
-                        <label class="small text-muted text-uppercase fw-bold">Date of Birth</label>
-                        <div id="modalVoterDOB" class="fw-bold text-dark"></div>
-                    </div>
-                    <div class="col-6">
-                        <label class="small text-muted text-uppercase fw-bold">Panchayat</label>
-                        <div id="modalVoterPanchayat" class="fw-bold text-dark"></div>
-                    </div>
-                    <div class="col-6">
-                        <label class="small text-muted text-uppercase fw-bold">Verification Status</label>
-                        <div><span class="badge bg-success">Approved</span></div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="avatar avatar--lg" id="modalVoterAvatar">?</span>
+                    <div>
+                        <strong class="d-block fs-5" id="modalVoterNameDisplay"></strong>
+                        <span class="helper-copy" id="modalVoterIDDisplay"></span>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal">Close</button>
+
+                <div class="candidate-list">
+                    <div class="candidate-list__item"><strong>Email:</strong> <span id="modalVoterEmail"></span></div>
+                    <div class="candidate-list__item"><strong>Date of Birth:</strong> <span id="modalVoterDOB"></span></div>
+                    <div class="candidate-list__item"><strong>Panchayat:</strong> <span id="modalVoterPanchayat"></span></div>
+                    <div class="candidate-list__item"><strong>Status:</strong> <span class="status-pill status-pill--success">Approved</span></div>
+                </div>
             </div>
         </div>
     </div>
@@ -223,39 +222,32 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const voterModal = document.getElementById('voterDetailsModal');
-    if (voterModal) {
-        voterModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const name = button.getAttribute('data-name');
-            const email = button.getAttribute('data-email');
-            const voterId = button.getAttribute('data-voterid');
-            const dob = button.getAttribute('data-dob');
-            const panchayat = button.getAttribute('data-panchayat');
-            const photo = button.getAttribute('data-photo');
+    document.addEventListener('DOMContentLoaded', function () {
+        const voterModal = document.getElementById('voterDetailsModal');
+
+        if (!voterModal) {
+            return;
+        }
+
+        voterModal.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const photo = trigger.getAttribute('data-photo');
+            const name = trigger.getAttribute('data-name');
 
             document.getElementById('modalVoterNameDisplay').textContent = name;
-            document.getElementById('modalVoterEmail').textContent = email;
-            document.getElementById('modalVoterIDDisplay').textContent = voterId;
-            document.getElementById('modalVoterDOB').textContent = dob;
-            document.getElementById('modalVoterPanchayat').textContent = panchayat;
+            document.getElementById('modalVoterEmail').textContent = trigger.getAttribute('data-email');
+            document.getElementById('modalVoterIDDisplay').textContent = trigger.getAttribute('data-voterid');
+            document.getElementById('modalVoterDOB').textContent = trigger.getAttribute('data-dob');
+            document.getElementById('modalVoterPanchayat').textContent = trigger.getAttribute('data-panchayat');
 
-            const photoImg = document.getElementById('modalVoterPhoto');
-            const personIcon = document.getElementById('modalVoterIcon');
-            
-            if (photo && photo !== '' && !photo.includes('undefined')) {
-                photoImg.src = photo;
-                photoImg.style.display = 'inline-block';
-                personIcon.style.display = 'none';
+            const avatar = document.getElementById('modalVoterAvatar');
+            if (photo) {
+                avatar.innerHTML = `<img src="${photo}" alt="${name}" width="90" height="90">`;
             } else {
-                photoImg.style.display = 'none';
-                personIcon.style.display = 'inline-block';
+                avatar.textContent = name.charAt(0).toUpperCase();
             }
         });
-    }
-});
+    });
 </script>
 @endpush
 @endsection
-

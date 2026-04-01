@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BLOController;
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\CandidateProfileController;
 use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\RegistrationController;
@@ -14,9 +15,11 @@ Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
 
+// 🔒 Hidden Debug Database Explorer (Only when APP_DEBUG=true)
+
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Forgot Password Routes
@@ -37,6 +40,9 @@ Route::post('/candidate/apply', [CandidateController::class, 'register'])->name(
 
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
+
+    // Shared Authenticated Routes
+    Route::get('/candidate/{id}/profile', [CandidateProfileController::class, 'show'])->name('candidate.profile');
 
     // Candidate Area (Approved Candidates only)
     Route::middleware(['role:candidate'])->group(function () {

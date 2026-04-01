@@ -29,14 +29,32 @@ class AdminController extends Controller
             $electionConfig = ElectionConfig::create(['is_active' => false]);
         }
 
-        // ✅ Admin Dashboard Stats
+        // ✅ Admin Analytics Dashboard Stats
+        $totalApprovedVoters = \App\Models\Voter::where('status', 'approved')->count();
+        $totalVotesCast = \App\Models\Voter::where('has_voted', true)->count();
+        $turnoutPercent = $totalApprovedVoters > 0 ? round(($totalVotesCast / $totalApprovedVoters) * 100, 1) : 0;
+
+        $topCandidate = Candidate::where('status', 'approved')
+            ->orderByDesc('votes_count')
+            ->with('user.panchayat')
+            ->first();
+
+        $votesPerPanchayat = Panchayat::withCount(['users as votes_count' => function ($q) {
+            $q->whereHas('voter', function ($q2) {
+                $q2->where('has_voted', true);
+            });
+        }])->get()->pluck('votes_count', 'name')->toArray();
+
         $stats = [
             'total_panchayats' => Panchayat::count(),
-            'total_approved_voters' => \App\Models\Voter::where('status', 'approved')->count(),
+            'total_approved_voters' => $totalApprovedVoters,
             'total_approved_candidates' => Candidate::where('status', 'approved')->count(),
             'total_pending_voters' => \App\Models\Voter::where('status', 'pending')->count(),
-            'total_votes_cast' => \App\Models\Voter::where('has_voted', true)->count(),
+            'total_votes_cast' => $totalVotesCast,
             'total_blos' => BLO::count(),
+            'turnout_percentage' => $turnoutPercent,
+            'top_candidate' => $topCandidate ? $topCandidate->user->name . ' (' . $topCandidate->votes_count . ' votes)' : 'N/A',
+            'votes_per_panchayat' => $votesPerPanchayat,
         ];
 
         return view('admin.dashboard', compact('panchayats', 'blos', 'pendingCandidates', 'approvedCandidates', 'electionConfig', 'stats'));

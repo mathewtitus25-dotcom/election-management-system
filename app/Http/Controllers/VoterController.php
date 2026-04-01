@@ -108,6 +108,9 @@ class VoterController extends Controller
             $candidate->increment('votes_count');
         });
 
+        // Invalidate the results cache so real-time stats update instantly
+        \Illuminate\Support\Facades\Cache::forget('election.results');
+
         return redirect()->route('voter.dashboard')->with('success', 'Your vote has been cast successfully! Your identity remains private.');
     }
 }
